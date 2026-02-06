@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Claw 🦞</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: transparent;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+
+        .container {
+            width: 400px;
+            height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* 龙虾本体 - 明显的呼吸动画 */
+        .pet {
+            font-size: 100px;
+            cursor: grab;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+            animation: breathe 3s ease-in-out infinite;
+            transition: transform 0.2s ease, filter 0.3s ease;
+        }
+
+        .pet:hover {
+            transform: scale(1.08);
+            filter: drop-shadow(0 6px 16px rgba(102, 126, 234, 0.3));
+        }
+
+        .pet:active {
+            cursor: grabbing;
+            transform: scale(0.92);
+        }
+
+        /* 不同状态的动画 */
+        .pet.thinking {
+            animation: think 1s ease-in-out infinite;
+        }
+
+        .pet.talking {
+            animation: talk 0.5s ease-in-out infinite;
+        }
+
+        .pet.working {
+            animation: work 0.8s ease-in-out infinite;
+        }
+
+        .pet.happy {
+            animation: happy 0.6s ease-in-out 3;
+        }
+
+        @keyframes breathe {
+            0%, 100% { 
+                transform: scale(1) translateY(0); 
+            }
+            50% { 
+                transform: scale(1.08) translateY(-8px); 
+            }
+        }
+
+        @keyframes think {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        @keyframes talk {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1) translateY(-5px); }
+        }
+
+        @keyframes work {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-5px) rotate(-3deg); }
+            75% { transform: translateX(5px) rotate(3deg); }
+        }
+
+        @keyframes happy {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.15) rotate(-10deg); }
+            75% { transform: scale(1.15) rotate(10deg); }
+        }
+
+        /* 对话气泡 - 位置下移 */
+        .bubble {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            padding: 10px 16px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 12px;
+            color: #333;
+            min-width: 120px;
+            max-width: 320px;
+            word-wrap: break-word;
+            white-space: normal;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            pointer-events: none;
+            text-align: center;
+            line-height: 1.5;
+            z-index: 50;
+        }
+
+        .bubble.show {
+            opacity: 1;
+        }
+
+        /* 通知 - 精致 */
+        .notif {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
+            backdrop-filter: blur(15px);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            opacity: 0;
+            transition: all 0.3s ease;
+            max-width: 320px;
+            font-size: 11px;
+            z-index: 100;
+        }
+
+        .notif.show {
+            opacity: 1;
+            top: 20px;
+        }
+
+        .notif-sender {
+            font-weight: 600;
+            font-size: 10px;
+            opacity: 0.85;
+            margin-bottom: 3px;
+        }
+
+        /* 菜单 - 清爽 */
+        .menu {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            width: 260px;
+        }
+
+        .menu.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .menu-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            transition: border 0.2s;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.alt {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        /* 状态指示 - 紧靠龙虾 */
+        .status-dot {
+            position: absolute;
+            bottom: 45%;
+            right: 35%;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+            transition: background 0.3s;
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+
+        .status-dot.on {
+            background: #4caf50;
+            box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+        }
+
+        /* 关闭按钮 */
+        .close {
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 60, 60, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .container:hover .close {
+            opacity: 1;
+        }
+
+        .close:hover {
+            background: rgba(255, 30, 30, 1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="close" onclick="closeApp()">×</button>
+        <div class="status-dot" id="status"></div>
+        <div class="notif" id="notif">
+            <div class="notif-sender" id="sender"></div>
+            <div id="content"></div>
+        </div>
+        <div class="bubble" id="bubble"></div>
+        <div class="pet" id="pet">🦞</div>
+        
+        <div class="menu" id="menu">
+            <div class="menu-title">🦞 Claw</div>
+            <input type="text" class="input" id="input" placeholder="说点什么..." onkeypress="onKey(event)">
+            <div class="btn-grid">
+                <button class="btn" onclick="send()">💬 发送</button>
+                <button class="btn alt" onclick="toggleVoice()" id="voiceBtn">🔊 语音</button>
+                <button class="btn" onclick="feed()">⚡ 充能</button>
+                <button class="btn" onclick="play()">🎯 任务</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ipcRenderer;
+        try {
+            ipcRenderer = require('electron').ipcRenderer;
+            console.log('✅ IPC Ready');
+        } catch (err) {
+            console.error('❌ IPC Failed');
+        }
+
+        const pet = document.getElementById('pet');
+        const bubble = document.getElementById('bubble');
+        const notif = document.getElementById('notif');
+        const sender = document.getElementById('sender');
+        const content = document.getElementById('content');
+        const menu = document.getElementById('menu');
+        const input = document.getElementById('input');
+        const status = document.getElementById('status');
+        const voiceBtn = document.getElementById('voiceBtn');
+
+        let voiceOn = true; // 默认开启语音
+        let dragging = false;
+        let startX, startY;
+        let currentMood = 'normal';
+        let idleTimer = null;
+
+        // 表情库 - 根据情绪
+        const emotions = {
+            normal: '🦞',
+            happy: '🦞',
+            thinking: '🤔',
+            busy: '💼',
+            sleepy: '😴',
+            excited: '🎉'
+        };
+
+        const pets = ['🦞', '🦀', '🦐', '🦑', '🐙', '🐠'];
+        const msgs = {
+            feed: ['嚼嚼~', '好吃!', '满足~', '能量+100!'],
+            play: ['冲!', '走起!', '嘿!', '横行霸道!'],
+            idle: ['...', '嗯?', '在呢~', '有事?', '*挥钳*', '*横着走*']
+        };
+
+        // 切换表情
+        function setMood(mood) {
+            currentMood = mood;
+            if (emotions[mood]) {
+                pet.textContent = emotions[mood];
+            }
+        }
+
+        // 闲置动画
+        function startIdleTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                // 10秒无操作后随机动作
+                const randomMsg = msgs.idle[Math.floor(Math.random() * msgs.idle.length)];
+                showBubble(randomMsg);
+                
+                // 随机小动作
+                const actions = ['jump', 'wiggle'];
+                const action = actions[Math.floor(Math.random() * actions.length)];
+                
+                if (action === 'jump') {
+                    pet.style.transform = 'translateY(-15px)';
+                    setTimeout(() => pet.style.transform = '', 200);
+                } else {
+                    pet.style.transform = 'rotate(10deg)';
+                    setTimeout(() => {
+                        pet.style.transform = 'rotate(-10deg)';
+                        setTimeout(() => pet.style.transform = '', 200);
+                    }, 150);
+                }
+                
+                // 继续下一轮闲置
+                startIdleTimer();
+            }, 10000);
+        }
+
+        // 重置闲置计时
+        function resetIdle() {
+            startIdleTimer();
+        }
+
+        // 拖动
+        pet.addEventListener('mousedown', e => {
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (dragging && ipcRenderer) {
+                ipcRenderer.send('move-window', {
+                    x: e.clientX - startX,
+                    y: e.clientY - startY
+                });
+                startX = e.clientX;
+                startY = e.clientY;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            dragging = false;
+        });
+
+        // 点击
+        pet.addEventListener('click', () => {
+            if (!dragging) {
+                menu.classList.toggle('show');
+                resetIdle();
+            }
+        });
+
+        // IPC 事件
+        if (ipcRenderer) {
+            ipcRenderer.on('new-message', (e, msg) => {
+                console.log('📩', msg);
+                setMood('busy');
+                pet.classList.add('working');
+                showNotif(msg.sender, msg.content);
+                setTimeout(() => {
+                    pet.classList.remove('working');
+                    setMood('normal');
+                }, 800);
+                resetIdle();
+            });
+
+            ipcRenderer.on('agent-response', (e, res) => {
+                console.log('🤖', res);
+                setMood('happy');
+                pet.classList.add('talking');
+                showBubble(res.content);
+                // 语音由main.js触发,这里不重复调用
+                setTimeout(() => {
+                    pet.classList.remove('talking');
+                    setMood('normal');
+                }, 3000);
+                resetIdle();
+            });
+
+            ipcRenderer.on('status-update', (e, s) => {
+                status.classList.toggle('on', s.connected);
+            });
+        }
+
+        function showNotif(s, c) {
+            sender.textContent = s;
+            content.textContent = c.substring(0, 50) + (c.length > 50 ? '...' : '');
+            notif.classList.add('show');
+            setTimeout(() => notif.classList.remove('show'), 2500);
+        }
+
+        function showBubble(text) {
+            bubble.textContent = text.substring(0, 100); // 增加到100字符
+            bubble.classList.add('show');
+            setTimeout(() => bubble.classList.remove('show'), 4000); // 延长到4秒
+        }
+
+        async function send() {
+            const msg = input.value.trim();
+            if (!msg || !ipcRenderer) return;
+            
+            input.value = '';
+            setMood('thinking');
+            pet.classList.add('thinking');
+            showBubble('思考中...');
+            
+            const reply = await ipcRenderer.invoke('openclaw-send', msg);
+            pet.classList.remove('thinking');
+            
+            if (reply) {
+                setMood('happy');
+                pet.classList.add('talking');
+                showBubble(reply.substring(0, 100));
+                setTimeout(() => {
+                    pet.classList.remove('talking');
+                    setMood('normal');
+                }, 2000);
+            }
+            resetIdle();
+        }
+
+        function onKey(e) {
+            if (e.key === 'Enter') send();
+        }
+
+        function toggleVoice() {
+            voiceOn = !voiceOn;
+            voiceBtn.textContent = voiceOn ? '🔇' : '🔊';
+            voiceBtn.classList.toggle('alt', voiceOn);
+            setMood('excited');
+            pet.classList.add('happy');
+            showBubble(voiceOn ? '语音已开启' : '语音已关闭');
+            setTimeout(() => {
+                pet.classList.remove('happy');
+                setMood('normal');
+            }, 1800);
+            resetIdle();
+        }
+
+        function feed() {
+            setMood('excited');
+            pet.classList.add('happy');
+            showBubble(msgs.feed[Math.floor(Math.random() * msgs.feed.length)]);
+            setTimeout(() => {
+                pet.classList.remove('happy');
+                setMood('normal');
+            }, 1800);
+            menu.classList.remove('show');
+            resetIdle();
+        }
+
+        function play() {
+            setMood('busy');
+            pet.classList.add('working');
+            showBubble(msgs.play[Math.floor(Math.random() * msgs.play.length)]);
+            setTimeout(() => {
+                pet.classList.remove('working');
+                setMood('normal');
+            }, 2400);
+            menu.classList.remove('show');
+            resetIdle();
+        }
+
+        function closeApp() {
+            if (ipcRenderer) ipcRenderer.send('quit-app');
+        }
+
+        // 状态检查
+        if (ipcRenderer) {
+            setInterval(async () => {
+                const s = await ipcRenderer.invoke('openclaw-status');
+                status.classList.toggle('on', s.connected);
+            }, 10000);
+        }
+
+        // 点击外部关闭菜单
+        document.addEventListener('click', e => {
+            if (!pet.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // 初始化
+        voiceBtn.textContent = '🔇'; // 因为默认开启
+        voiceBtn.classList.add('alt');
+        setMood('normal');
+        setTimeout(() => {
+            showBubble('龙虾待命 🦞 (语音已开启)');
+            startIdleTimer(); // 启动闲置计时
+        }, 1000);
+    </script>
+</body>
+</html>

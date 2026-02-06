@@ -1,0 +1,23 @@
+{
+  "name": "desktop-pet",
+  "version": "1.0.0",
+  "description": "可爱的桌面宠物小助手",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": [
+    "desktop",
+    "pet",
+    "electron"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.3.3"
+  },
+  "dependencies": {
+    "ws": "^8.19.0"
+  }
+}

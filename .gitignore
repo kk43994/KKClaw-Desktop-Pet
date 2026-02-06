@@ -1,0 +1,33 @@
+# 依赖
+node_modules/
+npm-debug.log*
+
+# 临时文件
+temp/
+*.mp3
+*.wav
+
+# 配置文件(本地)
+pet-config.json
+
+# 日志
+logs/
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 构建输出
+dist/
+build/
+out/
+
+# 工作日志(可选,包含个人信息)
+work-logs/
