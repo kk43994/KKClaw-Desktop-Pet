@@ -5,6 +5,46 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+## ⚡ 快速开始
+
+**最简单的方式 (不需要AI功能):**
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/kk43994/claw-desktop-pet.git
+cd claw-desktop-pet
+
+# 2. 安装依赖
+npm install
+pip install edge-tts
+
+# 3. 启动
+npm start
+```
+
+**完整功能 (包含AI对话):**
+
+```bash
+# 1-2. 同上
+
+# 3. 安装 OpenClaw
+npm install -g openclaw
+
+# 4. 启动 Gateway
+openclaw gateway start
+
+# 5. 启动龙虾
+npm start
+```
+
+第一次启动后:
+- 🦞 龙虾出现在右下角
+- 拖动到喜欢的位置
+- 点击打开菜单
+- 享受你的桌面助手!
+
+---
+
 ## ✨ 功能特性
 
 ### 🎨 核心功能
@@ -33,41 +73,134 @@
 - **状态指示** - 实时连接状态显示
 - **工作日志** - 自动记录操作历史
 
-## 📦 安装
+## 📦 安装与配置
 
 ### 前置要求
-- Node.js 16+
-- Python 3.8+ (用于 Edge TTS)
-- Windows 10/11
+- **Node.js** 16+ ([下载](https://nodejs.org/))
+- **Python** 3.8+ ([下载](https://www.python.org/downloads/))
+- **Windows** 10/11
+- **OpenClaw Gateway** (可选,用于AI对话)
 
-### 步骤
+### 详细步骤
 
-1. **克隆仓库**
+#### 1. 克隆仓库
 ```bash
-git clone https://github.com/YOUR_USERNAME/claw-desktop-pet.git
+git clone https://github.com/kk43994/claw-desktop-pet.git
 cd claw-desktop-pet
 ```
 
-2. **安装依赖**
+#### 2. 安装 Node.js 依赖
 ```bash
 npm install
-pip install edge-tts
 ```
 
-3. **配置 OpenClaw**
+如果安装失败,尝试:
+```bash
+npm install --legacy-peer-deps
+```
 
-创建或编辑配置文件 (如果需要):
+#### 3. 安装 Python 依赖 (语音系统)
+```bash
+# 方式1: 使用 pip
+pip install edge-tts
+
+# 方式2: 如果 pip 不在 PATH 里
+python -m pip install edge-tts
+
+# 验证安装
+edge-tts --version
+```
+
+**常见问题:**
+- 如果提示 `edge-tts: command not found`
+  - Windows: 添加 Python Scripts 目录到 PATH
+    通常在 `C:\Users\你的用户名\AppData\Roaming\Python\Python3X\Scripts`
+  - 或者使用完整路径运行
+
+#### 4. 配置 OpenClaw (可选)
+
+**如果你想使用AI对话功能:**
+
+a. 安装 OpenClaw Gateway:
+```bash
+npm install -g openclaw
+```
+
+b. 启动 Gateway:
+```bash
+openclaw gateway start
+```
+
+c. 配置 API (如果需要):
+编辑 `openclaw-client.js`:
+```javascript
+this.baseUrl = 'http://localhost:3000'; // 你的 Gateway 地址
+```
+
+**如果不使用AI对话:**
+- 龙虾仍然可以正常运行
+- 只是"发送"功能会不可用
+- 其他功能(语音、动画、闲置)都正常
+
+#### 5. 自定义配置 (可选)
+
+**更换语音:**
+编辑 `working-voice.js`:
+```javascript
+this.voice = 'zh-CN-XiaoxiaoNeural'; // 默认: 晓晓(活泼女声)
+
+// 其他选项:
+// 'zh-CN-YunxiNeural'    - 云希(温暖男声)
+// 'zh-CN-XiaoyiNeural'   - 晓伊(温柔女声)
+// 'zh-CN-YunjianNeural'  - 云健(新闻播报)
+```
+
+**调整窗口位置:**
+首次启动后会自动保存位置到 `pet-config.json`
+手动编辑:
 ```json
 {
-  "openclawUrl": "http://localhost:3000",
-  "voice": "zh-CN-XiaoxiaoNeural"
+  "position": { "x": 1580, "y": 418 },
+  "mood": "happy",
+  "voiceEnabled": true
 }
 ```
 
-4. **运行**
+#### 6. 运行
 ```bash
 npm start
 ```
+
+**首次运行:**
+- 窗口会出现在屏幕右下角
+- 拖动到你喜欢的位置,下次会记住
+- 点击龙虾打开菜单
+- 点击 🔊 切换语音播报
+
+### 🔍 验证安装
+
+**测试语音系统:**
+```bash
+edge-tts --voice "zh-CN-XiaoxiaoNeural" --text "你好,我是龙虾助手" --write-media test.mp3
+```
+如果生成了 `test.mp3` 文件,说明语音系统正常!
+
+**测试 OpenClaw 连接:**
+访问 http://localhost:3000 
+如果看到 OpenClaw Gateway 界面,说明连接正常!
+
+### ⚙️ 环境变量配置 (Windows)
+
+**添加 Python Scripts 到 PATH:**
+
+1. 右键 "此电脑" → 属性
+2. 高级系统设置 → 环境变量
+3. 系统变量 → Path → 编辑
+4. 新建 → 添加:
+   ```
+   C:\Users\你的用户名\AppData\Roaming\Python\Python313\Scripts
+   ```
+5. 确定 → 重启命令行
 
 ## 🎮 使用方法
 
@@ -158,15 +291,108 @@ CSS 动画定义在 `index.html` 的 `<style>` 部分。
 ## 🐛 常见问题
 
 ### 听不到声音?
-1. 检查系统音量
-2. 确认 edge-tts 已安装: `pip install edge-tts`
-3. 查看日志输出
+
+**问题1: edge-tts 未安装**
+```bash
+# 安装
+pip install edge-tts
+
+# 验证
+edge-tts --version
+```
+
+**问题2: Python Scripts 不在 PATH**
+- 找到 Scripts 目录 (通常在 `AppData\Roaming\Python\...`)
+- 添加到系统环境变量 PATH
+- 重启命令行
+
+**问题3: 系统音量静音**
+- 检查 Windows 音量混合器
+- 确认 "Node.js" 或 "Electron" 没被静音
+
+**问题4: 播放器被占用**
+- 关闭其他音乐播放器 (如酷狗)
+- 重启应用
 
 ### 窗口位置不对?
-删除 `pet-config.json`,重新启动会恢复默认位置。
+
+**重置位置:**
+1. 关闭应用
+2. 删除 `pet-config.json`
+3. 重新启动,会恢复默认位置
+
+**手动调整:**
+编辑 `pet-config.json`:
+```json
+{
+  "position": { "x": 100, "y": 100 }
+}
+```
 
 ### OpenClaw 连接失败?
-确保 OpenClaw Gateway 正在运行: `http://localhost:3000`
+
+**检查 Gateway 状态:**
+```bash
+openclaw gateway status
+```
+
+**启动 Gateway:**
+```bash
+openclaw gateway start
+```
+
+**修改连接地址:**
+编辑 `openclaw-client.js`:
+```javascript
+this.baseUrl = 'http://localhost:3000'; // 你的地址
+```
+
+### 应用启动失败?
+
+**清理并重装:**
+```bash
+# 删除 node_modules
+rm -rf node_modules package-lock.json
+
+# 重新安装
+npm install --legacy-peer-deps
+```
+
+**检查 Node.js 版本:**
+```bash
+node --version  # 应该 >= 16
+```
+
+### 龙虾没有动画?
+
+- 检查浏览器开发者工具 (F12)
+- 查看 Console 是否有错误
+- 确认 `index.html` 没有被修改
+
+### 语音播放但听不见?
+
+**检查音频设备:**
+1. 打开 Windows 设置 → 系统 → 声音
+2. 确认默认输出设备正确
+3. 测试设备是否工作
+
+**测试 PowerShell 音频:**
+```powershell
+Add-Type -AssemblyName System.Speech
+$speak = New-Object System.Speech.Synthesis.SpeechSynthesizer
+$speak.Speak("测试")
+```
+如果能听到,说明系统音频正常。
+
+### 如何卸载?
+
+```bash
+# 1. 删除项目文件夹
+rm -rf claw-desktop-pet
+
+# 2. (可选) 卸载 edge-tts
+pip uninstall edge-tts
+```
 
 ## 🚀 未来计划
 

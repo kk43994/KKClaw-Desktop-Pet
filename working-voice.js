@@ -38,9 +38,10 @@ class WorkingVoice {
             await execAsync(genCmd, { timeout: 10000 });
             console.log('✅ 语音文件生成');
             
-            // 用 Start-Process 播放 - 最简单可靠
-            const playCmd = `Start-Process -FilePath "${outputFile}" -Wait`;
-            await execAsync(`powershell -Command "${playCmd}"`, { timeout: 60000 });
+            // PowerShell MediaPlayer 播放
+            const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $mp = New-Object System.Windows.Media.MediaPlayer; $mp.Open('${outputFile}'); $mp.Play(); while($mp.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $mp.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $mp.Close()"`;
+            
+            await execAsync(playCmd, { timeout: 60000 });
             
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
             console.log(`✅ 播放完成 (${elapsed}秒)`);
