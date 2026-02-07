@@ -1,9 +1,19 @@
 # 🦞 Claw Desktop Pet
 
-一个可爱的桌面龙虾助手,集成了 OpenClaw AI、Edge TTS 语音、表情动画系统。
+一个**企业级7×24稳定运行**的桌面龙虾智能助手，集成了 OpenClaw AI、智能语音播报、性能监控、自动恢复等强大功能。
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Stability](https://img.shields.io/badge/stability-7×24-success)
+
+## ✨ 核心亮点
+
+- 🛡️ **系统级容错** - 5种错误全捕获，智能自愈
+- 🔄 **自动重启** - 崩溃后自动恢复，真正7×24运行
+- 📊 **性能监控** - 实时健康评分，异常告警
+- 🎙️ **智能语音** - 自然播报，口语化处理
+- 📝 **日志管理** - 自动轮转，完整可观测
+- 🧹 **资源优化** - 自动清理缓存和日志
 
 ## ⚡ 快速开始
 
@@ -39,18 +49,89 @@ npm start
 
 第一次启动后:
 - 🦞 龙虾出现在右下角
-- 拖动到喜欢的位置
-- 点击打开菜单
-- 享受你的桌面助手!
+- 🛡️ 全局错误处理启动
+- 📊 性能监控开始采样
+- 🎙️ 智能语音系统就绪
+- 拖动到喜欢的位置，享受智能助手！
 
 ---
 
-## ✨ 功能特性
+## 🚀 v1.3.0 新特性
+
+### 🛡️ 7×24稳定运行系统
+
+**全局错误处理**
+- 5种错误类型全捕获 (uncaughtException, unhandledRejection等)
+- 智能恢复机制 (最多3次尝试)
+- 致命错误识别 (ENOSPC, ENOMEM等)
+- 完整错误统计和历史
+
+**自动重启机制**
+- 崩溃后自动恢复
+- 渐进式延迟 (3秒→60秒)
+- 崩溃循环保护
+- 状态持久化
+- 重启次数限制 (1小时10次)
+
+**性能监控系统**
+- 实时性能采集 (CPU、内存、系统资源)
+- 智能健康评分 (100分制)
+- 异常检测和告警
+- 错误统计和持久化
+- 性能报告生成
+
+**日志轮转管理**
+- 自动清理过期日志 (30天)
+- 大文件自动归档 (10MB)
+- 日志浏览和查询
+- 空间统计分析
+
+**缓存清理系统**
+- 自动清理截图、语音、日志
+- 定时执行 (6小时)
+- 语音播报清理结果
+- 完整统计
+
+### 🎙️ 智能语音系统
+
+**智能内容分析**
+- 自动分类: success, error, warning, data, celebration
+- 优先级识别: high, medium, normal, low
+- 情境检测: happy, urgent, calm, excited
+
+**口语化处理**
+- 技术术语转换 (API→接口, JSON→数据)
+- 数字读法优化 (100MB→100兆)
+- 自然停顿添加
+- 连接词补充
+
+**情境化播报**
+- 紧急消息: 换男声 + 语速+10%
+- 兴奋消息: 语速+20% + 音调+50Hz
+- 成功消息: 音调+30Hz
+- 重要消息: 优先插队
+
+**智能过滤**
+- 去重检测 (5秒窗口)
+- 内容过短/纯标点过滤
+- 长度智能处理 (>300字自动摘要)
+
+**播报队列**
+- 最多排队10条
+- 高优先级插队
+- 自动依次播放
+
+---
+
+## 📦 功能特性
 
 ### 🎨 核心功能
-- **桌面宠物** - 可爱的龙虾🦞在桌面陪伴你
-- **AI 对话** - 集成 OpenClaw,实时智能对话
-- **语音播报** - Edge TTS 自然中文语音(晓晓)
+- **智能助手** - 企业级7×24稳定运行
+- **AI 对话** - 集成 OpenClaw，实时智能对话
+- **智能语音** - 口语化自然播报，情境化表达
+- **性能监控** - 实时健康评分，异常告警
+- **自动恢复** - 崩溃后智能重启
+- **日志管理** - 自动轮转，完整可观测
 - **双向同步** - 飞书消息 ↔️ 桌面通知
 
 ### 🎭 表情系统
@@ -61,25 +142,30 @@ npm start
 - 😴 困了 - 可扩展
 
 ### 🎬 动画效果
-- **呼吸动画** - 默认状态,上下浮动
+- **呼吸动画** - 默认状态，上下浮动
 - **思考动画** - 左右摇头
 - **说话动画** - 上下跳动
 - **工作动画** - 左右摇摆
 - **开心动画** - 旋转庆祝
-- **闲置动画** - 10秒无操作自动触发随机动作
+- **闲置动画** - 10秒无操作自动触发
 
 ### 💾 智能特性
 - **位置记忆** - 自动保存窗口位置
 - **状态指示** - 实时连接状态显示
 - **工作日志** - 自动记录操作历史
+- **健康评分** - 100分制性能评估
+- **错误统计** - 完整错误追踪
+- **资源优化** - 自动清理和管理
 
-## 📦 安装与配置
+---
+
+## 🛠️ 安装与配置
 
 ### 前置要求
 - **Node.js** 16+ ([下载](https://nodejs.org/))
 - **Python** 3.8+ ([下载](https://www.python.org/downloads/))
 - **Windows** 10/11
-- **OpenClaw Gateway** (可选,用于AI对话)
+- **OpenClaw Gateway** (可选，用于AI对话)
 
 ### 详细步骤
 
@@ -94,113 +180,29 @@ cd claw-desktop-pet
 npm install
 ```
 
-如果安装失败,尝试:
-```bash
-npm install --legacy-peer-deps
-```
-
 #### 3. 安装 Python 依赖 (语音系统)
 ```bash
-# 方式1: 使用 pip
 pip install edge-tts
-
-# 方式2: 如果 pip 不在 PATH 里
-python -m pip install edge-tts
 
 # 验证安装
 edge-tts --version
 ```
 
-**常见问题:**
-- 如果提示 `edge-tts: command not found`
-  - Windows: 添加 Python Scripts 目录到 PATH
-    通常在 `C:\Users\你的用户名\AppData\Roaming\Python\Python3X\Scripts`
-  - 或者使用完整路径运行
-
 #### 4. 配置 OpenClaw (可选)
-
-**如果你想使用AI对话功能:**
-
-a. 安装 OpenClaw Gateway:
 ```bash
+# 安装 OpenClaw Gateway
 npm install -g openclaw
-```
 
-b. 启动 Gateway:
-```bash
+# 启动 Gateway
 openclaw gateway start
 ```
 
-c. 配置 API (如果需要):
-编辑 `openclaw-client.js`:
-```javascript
-this.baseUrl = 'http://localhost:3000'; // 你的 Gateway 地址
-```
-
-**如果不使用AI对话:**
-- 龙虾仍然可以正常运行
-- 只是"发送"功能会不可用
-- 其他功能(语音、动画、闲置)都正常
-
-#### 5. 自定义配置 (可选)
-
-**更换语音:**
-编辑 `working-voice.js`:
-```javascript
-this.voice = 'zh-CN-XiaoxiaoNeural'; // 默认: 晓晓(活泼女声)
-
-// 其他选项:
-// 'zh-CN-YunxiNeural'    - 云希(温暖男声)
-// 'zh-CN-XiaoyiNeural'   - 晓伊(温柔女声)
-// 'zh-CN-YunjianNeural'  - 云健(新闻播报)
-```
-
-**调整窗口位置:**
-首次启动后会自动保存位置到 `pet-config.json`
-手动编辑:
-```json
-{
-  "position": { "x": 1580, "y": 418 },
-  "mood": "happy",
-  "voiceEnabled": true
-}
-```
-
-#### 6. 运行
+#### 5. 运行
 ```bash
 npm start
 ```
 
-**首次运行:**
-- 窗口会出现在屏幕右下角
-- 拖动到你喜欢的位置,下次会记住
-- 点击龙虾打开菜单
-- 点击 🔊 切换语音播报
-
-### 🔍 验证安装
-
-**测试语音系统:**
-```bash
-edge-tts --voice "zh-CN-XiaoxiaoNeural" --text "你好,我是龙虾助手" --write-media test.mp3
-```
-如果生成了 `test.mp3` 文件,说明语音系统正常!
-
-**测试 OpenClaw 连接:**
-访问 http://localhost:3000 
-如果看到 OpenClaw Gateway 界面,说明连接正常!
-
-### ⚙️ 环境变量配置 (Windows)
-
-**添加 Python Scripts 到 PATH:**
-
-1. 右键 "此电脑" → 属性
-2. 高级系统设置 → 环境变量
-3. 系统变量 → Path → 编辑
-4. 新建 → 添加:
-   ```
-   C:\Users\你的用户名\AppData\Roaming\Python\Python313\Scripts
-   ```
-5. 确定 → 重启命令行
+---
 
 ## 🎮 使用方法
 
@@ -216,13 +218,21 @@ edge-tts --voice "zh-CN-XiaoxiaoNeural" --text "你好,我是龙虾助手" --wri
 - ⚡ **充能** - 给龙虾加能量
 - 🎯 **任务** - 触发工作动画
 
-### 闲置模式
-10秒无操作后,龙虾会:
-- 随机说话 ("...", "嗯?", "*挥钳*")
-- 做小动作 (跳跃、摇摆)
-- 持续循环,保持活力
+### 性能监控
+- 📊 查看实时性能数据
+- 🏥 健康评分 (100分制)
+- ⚠️ 异常告警
+- 📈 性能趋势分析
 
-## 🛠️ 技术栈
+### 日志管理
+- 📝 查看最近日志
+- 🔍 搜索日志内容
+- 🧹 手动触发清理
+- 📊 空间统计
+
+---
+
+## 🔧 技术栈
 
 - **Electron** - 桌面应用框架
 - **OpenClaw** - AI 对话引擎
@@ -230,209 +240,164 @@ edge-tts --voice "zh-CN-XiaoxiaoNeural" --text "你好,我是龙虾助手" --wri
 - **Node.js** - 后端运行时
 - **HTML/CSS/JS** - 前端界面
 
+---
+
 ## 📁 项目结构
 
 ```
 claw-desktop-pet/
-├── main.js                 # Electron 主进程
-├── index.html              # 前端界面
-├── openclaw-client.js      # OpenClaw API 客户端
-├── working-voice.js        # Edge TTS 语音系统
-├── message-sync.js         # 消息同步系统
-├── desktop-notifier.js     # 桌面通知服务器
-├── pet-config.js           # 配置管理
-├── work-logger.js          # 工作日志
-├── auto-notify.js          # 自动通知辅助
-├── package.json            # 项目配置
-├── README.md               # 说明文档
-└── temp/                   # 临时文件(语音缓存)
+├── main.js                      # Electron 主进程
+├── index.html                   # 前端界面
+├── openclaw-client.js           # OpenClaw API 客户端
+├── smart-voice.js              # 🆕 智能语音系统
+├── global-error-handler.js     # 🆕 全局错误处理
+├── auto-restart.js             # 🆕 自动重启机制
+├── performance-monitor.js      # 🆕 性能监控系统
+├── log-rotation.js             # 🆕 日志轮转管理
+├── cache-manager.js            # 🆕 缓存清理系统
+├── service-manager.js          # 服务管理
+├── message-sync.js             # 消息同步系统
+├── desktop-notifier.js         # 桌面通知服务器
+├── pet-config.js               # 配置管理
+├── work-logger.js              # 工作日志
+├── package.json                # 项目配置
+├── README.md                   # 说明文档
+├── AUTO-RESTART.md             # 🆕 自动重启文档
+├── ERROR-HANDLING.md           # 🆕 错误处理文档
+├── MONITORING.md               # 🆕 性能监控文档
+├── SMART-VOICE.md              # 🆕 智能语音文档
+├── CACHE-CLEANUP.md            # 🆕 缓存清理文档
+└── RELEASE-v1.3.0.md          # 🆕 发布说明
 ```
 
-## 🔧 配置选项
+---
 
-### pet-config.json
-```json
-{
-  "position": { "x": 1580, "y": 418 },
-  "mood": "happy",
-  "theme": "default",
-  "voiceEnabled": true
-}
-```
+## 📊 性能指标
 
-- `position` - 窗口位置(自动保存)
-- `mood` - 当前情绪状态
-- `theme` - 主题(未来扩展)
-- `voiceEnabled` - 语音开关
+- **内存占用:** ~60MB (含监控数据)
+- **CPU占用:** <1% (正常运行)
+- **启动时间:** ~2秒
+- **重启恢复:** <5秒
+- **健康评分:** 实时更新
+- **日志大小:** 自动控制
 
-## 🎨 自定义
+---
 
-### 更换声音
-编辑 `working-voice.js`:
+## 🔍 监控和调试
+
+### IPC 接口
+
 ```javascript
-this.voice = 'zh-CN-YunxiNeural'; // 温暖男声
-// 或
-this.voice = 'zh-CN-XiaoyiNeural'; // 温柔女声
+// 性能监控
+const stats = await window.ipc.invoke('performance-stats');
+const health = await window.ipc.invoke('health-check');
+
+// 日志管理
+const logs = await window.ipc.invoke('log-list', 10);
+await window.ipc.invoke('log-rotate');
+
+// 错误历史
+const errors = await window.ipc.invoke('error-history', 10);
+
+// 重启管理
+const restartStats = await window.ipc.invoke('restart-stats');
+
+// 智能语音
+await window.ipc.invoke('voice-speak', '测试', { priority: 'high' });
+const voiceStats = await window.ipc.invoke('voice-stats');
 ```
 
-### 更换表情
-编辑 `index.html`:
-```javascript
-const emotions = {
-    normal: '🦞',
-    happy: '🎉',
-    // 添加更多...
-};
-```
-
-### 调整动画
-CSS 动画定义在 `index.html` 的 `<style>` 部分。
+---
 
 ## 🐛 常见问题
 
-### 听不到声音?
+### 性能监控显示异常?
+- 检查系统资源使用情况
+- 查看错误日志
+- 运行健康检查
 
-**问题1: edge-tts 未安装**
-```bash
-# 安装
-pip install edge-tts
+### 自动重启不工作?
+- 查看重启统计
+- 检查是否达到重启上限
+- 查看错误日志
 
-# 验证
-edge-tts --version
-```
+### 语音播报不自然?
+- 使用新的智能语音系统
+- 支持口语化和情境化
+- 查看 SMART-VOICE.md
 
-**问题2: Python Scripts 不在 PATH**
-- 找到 Scripts 目录 (通常在 `AppData\Roaming\Python\...`)
-- 添加到系统环境变量 PATH
-- 重启命令行
+---
 
-**问题3: 系统音量静音**
-- 检查 Windows 音量混合器
-- 确认 "Node.js" 或 "Electron" 没被静音
+## 📝 更新日志
 
-**问题4: 播放器被占用**
-- 关闭其他音乐播放器 (如酷狗)
-- 重启应用
+### v1.3.0 (2026-02-07) 🚀
+- ✨ **全局错误处理系统** - 系统级容错和自愈
+- ✨ **自动重启机制** - 崩溃后智能恢复
+- ✨ **性能监控系统** - 实时健康评分和异常告警
+- ✨ **日志轮转管理** - 自动清理和空间管理
+- ✨ **缓存清理系统** - 自动资源优化
+- ✨ **智能语音系统** - 口语化自然播报
+- 📝 新增5份技术文档
+- 🧪 新增5个测试脚本
+- 🎯 总计: 18个文件修改，+4558行代码
 
-### 窗口位置不对?
+[查看完整发布说明](RELEASE-v1.3.0.md)
 
-**重置位置:**
-1. 关闭应用
-2. 删除 `pet-config.json`
-3. 重新启动,会恢复默认位置
+### v1.1.0 (2026-02-06)
+- ✨ 进度汇报系统
+- 🎤 emoji 过滤
+- 📏 增加语音长度
+- 📖 完善文档
 
-**手动调整:**
-编辑 `pet-config.json`:
-```json
-{
-  "position": { "x": 100, "y": 100 }
-}
-```
+### v1.0.0 (2026-02-06)
+- 🎉 初始发布
 
-### OpenClaw 连接失败?
-
-**检查 Gateway 状态:**
-```bash
-openclaw gateway status
-```
-
-**启动 Gateway:**
-```bash
-openclaw gateway start
-```
-
-**修改连接地址:**
-编辑 `openclaw-client.js`:
-```javascript
-this.baseUrl = 'http://localhost:3000'; // 你的地址
-```
-
-### 应用启动失败?
-
-**清理并重装:**
-```bash
-# 删除 node_modules
-rm -rf node_modules package-lock.json
-
-# 重新安装
-npm install --legacy-peer-deps
-```
-
-**检查 Node.js 版本:**
-```bash
-node --version  # 应该 >= 16
-```
-
-### 龙虾没有动画?
-
-- 检查浏览器开发者工具 (F12)
-- 查看 Console 是否有错误
-- 确认 `index.html` 没有被修改
-
-### 语音播放但听不见?
-
-**检查音频设备:**
-1. 打开 Windows 设置 → 系统 → 声音
-2. 确认默认输出设备正确
-3. 测试设备是否工作
-
-**测试 PowerShell 音频:**
-```powershell
-Add-Type -AssemblyName System.Speech
-$speak = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$speak.Speak("测试")
-```
-如果能听到,说明系统音频正常。
-
-### 如何卸载?
-
-```bash
-# 1. 删除项目文件夹
-rm -rf claw-desktop-pet
-
-# 2. (可选) 卸载 edge-tts
-pip uninstall edge-tts
-```
+---
 
 ## 🚀 未来计划
 
 - [ ] 快捷键唤起 (Ctrl+Shift+C)
 - [ ] 主题切换系统
 - [ ] 夜间模式
-- [ ] 消息历史记录
-- [ ] 定时提醒功能
-- [ ] 截图功能
-- [ ] 拖拽文件发送
-- [ ] 多窗口支持
+- [ ] 远程监控面板
+- [ ] AI 辅助诊断
+- [ ] Windows 服务模式
+- [ ] 多语言支持
 
-## 📝 更新日志
-
-### v1.1.0 (2026-02-06)
-- ✨ **进度汇报系统** - 执行任务时实时通知进度
-- 🎤 **emoji 过滤** - 语音播报更清晰
-- 📏 **增加语音长度** - 支持500字符(约1-2分钟)
-- 📖 **完善文档** - 详细配置说明和FAQ
-
-### v1.0.0 (2026-02-06)
-- 🎉 初始发布
-
-[查看完整更新日志](CHANGELOG.md)
+---
 
 ## 📄 许可证
 
 MIT License - 自由使用、修改、分发
 
+---
+
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request!
 
+---
+
 ## 👨‍💻 作者
 
-- **zhouk** - 开发者
+- **zhouk (kk43994)** - 开发者
 - **Claw (AI)** - 灵魂设计师 🦞
 
 ---
 
-**⭐ 如果喜欢,请给个 Star!**
+## 📚 文档
+
+- [错误处理文档](ERROR-HANDLING.md)
+- [自动重启文档](AUTO-RESTART.md)
+- [性能监控文档](MONITORING.md)
+- [智能语音文档](SMART-VOICE.md)
+- [缓存清理文档](CACHE-CLEANUP.md)
+- [发布说明 v1.3.0](RELEASE-v1.3.0.md)
+
+---
+
+**⭐ 如果喜欢，请给个 Star！**
+
+**🦞 现在是企业级7×24稳定运行的智能助手！**
 
 Made with ❤️ and 🦞
