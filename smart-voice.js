@@ -244,7 +244,7 @@ class SmartVoiceSystem {
         switch (analysis.emotion) {
             case 'excited':
                 config.rate = '+20%';   // 快一点
-                config.pitch = '+50Hz'; // 高一点
+                config.pitch = '+50Hz'; // 超兴奋 - 最高 (保持不变)
                 break;
             case 'urgent':
                 config.rate = '+10%';
@@ -252,9 +252,13 @@ class SmartVoiceSystem {
                 break;
             case 'calm':
                 config.rate = '-10%';   // 慢一点
+                config.pitch = '+20Hz'; // 平静也提高一点
                 break;
             case 'happy':
-                config.pitch = '+30Hz';
+                config.pitch = '+30Hz'; // 开心 (保持不变)
+                break;
+            default:
+                config.pitch = '+20Hz'; // 默认普通消息 - 提高20Hz
                 break;
         }
         
@@ -306,12 +310,12 @@ class SmartVoiceSystem {
                 ttsCmd += ` --pitch="${voiceConfig.pitch}"`;
             }
             
-            await execAsync(ttsCmd, { timeout: 15000 });
+            await execAsync(ttsCmd, { timeout: 30000 }); // 30秒 - 生成语音
             
             // PowerShell 播放
             const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $mp = New-Object System.Windows.Media.MediaPlayer; $mp.Open('${outputFile}'); $mp.Play(); while($mp.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $mp.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $mp.Close()"`;
             
-            await execAsync(playCmd, { timeout: 60000 });
+            await execAsync(playCmd, { timeout: 120000 }); // 120秒 - 播放时间
             
             const duration = (Date.now() - startTime) / 1000;
             this.stats.avgDuration = (this.stats.avgDuration * (this.stats.totalSpoken - 1) + duration) / this.stats.totalSpoken;
@@ -368,8 +372,8 @@ class SmartVoiceSystem {
         cleaned = cleaned.replace(/[【】\[\]{}「」_~#@]/g, '');
         
         // 长度限制
-        if (cleaned.length > 300) {
-            cleaned = cleaned.substring(0, 300) + '，等共' + cleaned.length + '字';
+        if (cleaned.length > 800) {
+            cleaned = cleaned.substring(0, 800) + '，等共' + cleaned.length + '字';
         }
         
         // 空格清理

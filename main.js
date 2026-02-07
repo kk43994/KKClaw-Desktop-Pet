@@ -252,6 +252,10 @@ async function createWindow() {
   // 启动消息同步
   messageSync.connect();
 
+  // 🧹 清理旧的事件监听器,防止重复播报
+  desktopNotifier.removeAllListeners('user-message');
+  desktopNotifier.removeAllListeners('agent-response');
+
   // 监听桌面通知（服务器已在上面启动）
   desktopNotifier.on('user-message', (payload) => {
     console.log('👤 用户消息:', payload);
@@ -274,7 +278,7 @@ async function createWindow() {
       
       // 🔊 语音播报用户消息
       if (payload.content && voiceSystem) {
-        const maxLength = 500;
+        const maxLength = 800; // 增加到800字,约2-3分钟
         const voiceText = payload.content.substring(0, maxLength);
         voiceSystem.speak(voiceText);
       }
@@ -289,7 +293,7 @@ async function createWindow() {
       });
       // 直接在这里触发语音,完整播放(最多500字符)
       if (payload.content && voiceSystem) {
-        const maxLength = 500; // 增加到500字符,约1-2分钟
+        const maxLength = 800; // 增加到800字,约2-3分钟 // 增加到500字符,约1-2分钟
         const voiceText = payload.content.substring(0, maxLength);
         voiceSystem.speak(voiceText);
       }

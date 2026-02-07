@@ -31,3 +31,43 @@ out/
 
 # 工作日志(可选,包含个人信息)
 work-logs/
+
+# 🔒 个人设置和凭证
+.moltbook-credentials
+*.credentials
+config.local.json
+screenshots/
+
+# 🧪 测试文件
+test-*.js
+fix-*.js
+try-*.js
+simple-*.js
+detailed-*.js
+check-*.js
+verify-*.js
+register-*.js
+post-to-*.js
+reply-*.js
+update-*.js
+browse-*.js
+engage-*.js
+search-*.js
+monitor-*.js
+get-*.js
+
+# 📝 临时文档
+*-SUCCESS.md
+*-COMPLETED.md
+*-INTEGRATION.md
+*-API.md
+BUG-*.md
+VOICE-*.md
+LEARNING-*.md
+MOLTBOOK-*.md
+PROMOTION-*.md
+ENGAGEMENT-*.md
+
+# 📦 打包文件
+clawhub-package/
+
