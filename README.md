@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Stability](https://img.shields.io/badge/stability-7×24-success)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
@@ -11,7 +11,7 @@
 
 集成了 OpenClaw AI、智能语音播报、性能监控、自动恢复等强大功能
 
-[快速开始](#-快速开始) • [功能特性](#-v130-新特性) • [文档](#-文档) • [更新日志](#-更新日志)
+[快速开始](#-快速开始) • [功能特性](#-核心亮点) • [更新日志](#-更新日志) • [文档](#-文档)
 
 </div>
 
@@ -350,7 +350,33 @@ const voiceStats = await window.ipc.invoke('voice-stats');
 
 ## 📝 更新日志
 
-### v1.3.0 (2026-02-07) 🚀
+### v1.4.0 (2026-02-07) ✨
+
+<details>
+<summary>查看详情</summary>
+
+**新增功能:**
+- 🎙️ 智能语音音调优化
+  - 普通消息提升到+20Hz (更年轻活泼)
+  - 保持情绪化音调变化 (开心+30Hz, 超兴奋+50Hz)
+  - 声音更有层次感和表现力
+
+**Bug修复:**
+- 🐛 修复重复播报问题 (同一消息播报3次)
+- 🧹 添加EventEmitter监听器清理机制
+
+**性能优化:**
+- ⚡ 大幅增加语音播报时长限制
+  - TTS生成: 15秒 → 30秒
+  - 播放时间: 60秒 → 120秒
+  - 文本长度: 300-500字 → 800字
+- 🎯 文本清理优化 (自动移除emoji、markdown等)
+
+[查看完整发布说明](CHANGELOG.md)
+
+</details>
+
+### v1.3.0 (2026-02-06) 🚀
 
 <details>
 <summary>查看详情</summary>
