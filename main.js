@@ -702,10 +702,11 @@ function clampToScreen(x, y, winWidth = 200, winHeight = 260) {
     maxX = Math.max(maxX, dx + dw);
     maxY = Math.max(maxY, dy + dh);
   }
-  // 留出至少30px在屏幕内，这样用户总能拖回来
-  const margin = 30;
-  const clampedX = Math.max(minX - winWidth + margin, Math.min(x, maxX - margin));
-  const clampedY = Math.max(minY, Math.min(y, maxY - margin));
+  // 球体在窗口中居中，约67px大小，窗口200x260
+  // 确保窗口不超出屏幕边界（留少量边距让球体始终可见可拖）
+  const padding = 10; // 窗口边缘到屏幕边缘的最小距离
+  const clampedX = Math.max(minX - padding, Math.min(x, maxX - winWidth + padding));
+  const clampedY = Math.max(minY - padding, Math.min(y, maxY - winHeight + padding));
   return { x: clampedX, y: clampedY };
 }
 
