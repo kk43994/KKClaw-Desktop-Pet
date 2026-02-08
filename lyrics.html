@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>歌词窗口</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *::-webkit-scrollbar { display: none; }
+    html, body {
+        width: 100%; height: 100%;
+        background: transparent;
+        overflow: hidden;
+        pointer-events: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    }
+    .lyrics-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 8px 16px;
+    }
+    .lyric-line {
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        line-height: 1.6;
+        text-align: center;
+        /* 白色自发光效果 */
+        text-shadow:
+            0 0 8px rgba(255,255,255,0.8),
+            0 0 16px rgba(255,255,255,0.4),
+            0 0 32px rgba(255,255,255,0.2),
+            0 1px 3px rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: translateY(10px) scale(0.92);
+        transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        max-width: 360px;
+        word-wrap: break-word;
+        margin-bottom: 4px;
+    }
+    .lyric-line.visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    .lyric-line.fading {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.95);
+        transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .lyric-sender {
+        font-size: 10px;
+        font-weight: 400;
+        opacity: 0.6;
+        margin-bottom: 2px;
+        text-shadow:
+            0 0 6px rgba(255,255,255,0.5),
+            0 1px 2px rgba(0,0,0,0.4);
+    }
+    .lyric-cursor {
+        display: inline-block;
+        width: 2px;
+        height: 14px;
+        background: #fff;
+        vertical-align: middle;
+        margin-left: 2px;
+        box-shadow: 0 0 6px rgba(255,255,255,0.8);
+        animation: blink-cursor 0.8s step-end infinite;
+    }
+    @keyframes blink-cursor {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    /* 所有消息统一白色自发光 */
+    .lyric-line.agent {
+        color: #ffffff;
+    }
+    .lyric-line.system {
+        color: #ffffff;
+        font-size: 11px;
+        opacity: 0.8;
+    }
+</style>
+</head>
+<body>
+<div class="lyrics-container" id="container"></div>
+
+<script>
+    let ipcRenderer;
+    try { ipcRenderer = require('electron').ipcRenderer; } catch(e) {}
+
+    const container = document.getElementById('container');
+    const MAX_LINES = 3;
+    let activeLines = [];
+    let typewriterTimer = null;
+
+    // 显示一条消息（打字机效果）
+    // duration: 歌词显示时长（毫秒），0或不传则用默认6秒
+    function showMessage(text, type = 'user', sender = '', duration = 0) {
+        // 清理旧行
+        while (activeLines.length >= MAX_LINES) {
+            const old = activeLines.shift();
+            fadeOut(old);
+        }
+
+        // 创建新行
+        const line = document.createElement('div');
+        line.className = `lyric-line ${type}`;
+        
+        // 发送者（可选）
+        if (sender && type !== 'system') {
+            const senderEl = document.createElement('div');
+            senderEl.className = 'lyric-sender';
+            senderEl.textContent = sender;
+            line.appendChild(senderEl);
+        }
+
+        // 文本容器
+        const textSpan = document.createElement('span');
+        textSpan.className = 'lyric-text';
+        line.appendChild(textSpan);
+
+        // 光标
+        const cursor = document.createElement('span');
+        cursor.className = 'lyric-cursor';
+        line.appendChild(cursor);
+
+        container.appendChild(line);
+
+        // 截断长文本
+        const displayText = text.length > 80 ? text.substring(0, 77) + '...' : text;
+
+        // 触发出现动画
+        requestAnimationFrame(() => {
+            line.classList.add('visible');
+        });
+
+        // 打字机效果
+        let charIndex = 0;
+        if (typewriterTimer) clearInterval(typewriterTimer);
+        
+        typewriterTimer = setInterval(() => {
+            if (charIndex < displayText.length) {
+                textSpan.textContent += displayText[charIndex];
+                charIndex++;
+            } else {
+                clearInterval(typewriterTimer);
+                typewriterTimer = null;
+                // 打完后移除光标（优雅���出）
+                setTimeout(() => {
+                    cursor.style.transition = 'opacity 0.3s';
+                    cursor.style.opacity = '0';
+                    setTimeout(() => cursor.remove(), 300);
+                }, 500);
+            }
+        }, 35);
+
+        const lineObj = { el: line, timer: null };
+        activeLines.push(lineObj);
+
+        // 自动消失 — 使用传入的duration，或默认6秒
+        const fadeDelay = Math.max(duration || 6000, 3000); // 最少3秒
+        lineObj.timer = setTimeout(() => {
+            fadeOut(lineObj);
+        }, fadeDelay);
+    }
+
+    // 优雅淡出
+    function fadeOut(lineObj) {
+        if (!lineObj || !lineObj.el) return;
+        if (lineObj.timer) { clearTimeout(lineObj.timer); lineObj.timer = null; }
+        lineObj.el.classList.remove('visible');
+        lineObj.el.classList.add('fading');
+        setTimeout(() => {
+            lineObj.el.remove();
+            const idx = activeLines.indexOf(lineObj);
+            if (idx > -1) activeLines.splice(idx, 1);
+        }, 800); // 等淡出动画完成
+    }
+
+    // IPC 监听
+    if (ipcRenderer) {
+        ipcRenderer.on('show-lyric', (e, data) => {
+            // duration: 语音播报时长（毫秒），歌词等语音播完后再消失
+            showMessage(data.text, data.type || 'user', data.sender || '', data.duration || 0);
+        });
+    }
+
+    window.showMessage = showMessage;
+</script>
+</body>
+</html>

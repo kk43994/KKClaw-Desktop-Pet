@@ -14,17 +14,33 @@ const CacheManager = require('./cache-manager'); // 🧹 缓存管理
 const { ElectronRestartHandler } = require('./auto-restart'); // 🔄 自动重启
 const PerformanceMonitor = require('./performance-monitor'); // 📊 性能监控
 const LogRotationManager = require('./log-rotation'); // 📝 日志轮转
-const GlobalErrorHandler = require('./global-error-handler'); // 🛡️ 全局错误处理
+const GlobalErrorHandler = require('./global-error-handler'); // 🛡️ 全局错误处���
+const GatewayGuardian = require('./gateway-guardian'); // 🛡️ Gateway 进程守护
 
-// 读取 OpenClaw 配置获取 token
-function getGatewayToken() {
+// Windows透明窗口修复 — 禁用硬件加速彻底解决浅色背景矩形框
+app.disableHardwareAcceleration();
+
+// 读取 OpenClaw 配置获取 token 和端口
+function getGatewayConfig() {
   try {
     const configPath = path.join(process.env.HOME || process.env.USERPROFILE, '.openclaw', 'openclaw.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    return config.gateway?.auth?.token || 'f341263d57a0efcbc83c69c6d9e2b2e0f885aaacb35572dd';
+    return {
+      port: config.gateway?.port || 18789,
+      token: config.gateway?.auth?.token || 'f341263d57a0efcbc83c69c6d9e2b2e0f885aaacb35572dd'
+    };
   } catch (err) {
-    return 'f341263d57a0efcbc83c69c6d9e2b2e0f885aaacb35572dd';
+    return {
+      port: 18789,
+      token: 'f341263d57a0efcbc83c69c6d9e2b2e0f885aaacb35572dd'
+    };
   }
+}
+
+// 读取 OpenClaw 配置获取 token
+function getGatewayToken() {
+  const config = getGatewayConfig();
+  return config.token;
 }
 
 // 🔒 单实例锁 - 防止重复启动
@@ -46,6 +62,7 @@ if (!gotTheLock) {
 }
 
 let mainWindow;
+let lyricsWindow;
 let tray;
 let openclawClient;
 let voiceSystem;
@@ -61,6 +78,7 @@ let restartHandler; // 🔄 自动重启处理器
 let performanceMonitor; // 📊 性能监控
 let logRotation; // 📝 日志轮转
 let errorHandler; // 🛡️ 全局错误处理
+let gatewayGuardian; // 🛡️ Gateway 进程守护
 
 // 🛡️ 初始化全局错误处理 (最优先)
 errorHandler = new GlobalErrorHandler({
@@ -216,17 +234,121 @@ async function createWindow() {
   // 启动服务管理器
   serviceManager.start();
 
+  // 🛡️ 启动 Gateway 进程守护
+  gatewayGuardian = new GatewayGuardian({
+    checkInterval: 5000,        // 每5秒检查一次
+    maxRestarts: 10,            // 1小时内最多重启10次
+    restartWindow: 60 * 60 * 1000, // 1小时窗口
+    gatewayHost: 'http://127.0.0.1:18789'
+  });
+
+  // 监听 Guardian 事件
+  gatewayGuardian.on('unhealthy', (info) => {
+    console.log(`🚨 Gateway 不健康: ${info.reason}, 连续失败 ${info.consecutiveFailures} 次`);
+    if (voiceSystem) {
+      voiceSystem.speak('检测到Gateway异常，正在自动恢复', { priority: 'high' });
+    }
+    workLogger.log('error', `Gateway 不健康: ${info.reason}`);
+  });
+
+  gatewayGuardian.on('restarted', (info) => {
+    console.log(`✅ Gateway 已自动重启 (第 ${info.restartCount}/${info.maxRestarts} 次)`);
+    if (voiceSystem) {
+      voiceSystem.speak('Gateway已自动重启', { priority: 'normal' });
+    }
+    workLogger.log('success', `Gateway 自动重启成功 (${info.restartCount}/${info.maxRestarts})`);
+  });
+
+  gatewayGuardian.on('restart-limit-reached', (info) => {
+    console.log('❌ Gateway 重启次数过多，已停止自动重启');
+    if (voiceSystem) {
+      voiceSystem.speak('Gateway频繁异常，已停止自动重启，请检查日志', { priority: 'high' });
+    }
+    workLogger.logError(`Gateway 重启次数过多 (${info.restartHistory.length} 次)`);
+
+    // 发送桌面通知
+    new Notification({
+      title: 'OpenClaw Gateway 异常',
+      body: 'Gateway 频繁重启，已停止自动恢复。请检查日志或手动重启。',
+      icon: path.join(__dirname, 'icon.png')
+    }).show();
+  });
+
+  gatewayGuardian.on('restart-failed', (info) => {
+    console.log('❌ Gateway 重启失败:', info.error);
+    workLogger.logError(`Gateway 重启失败: ${info.error}`);
+  });
+
+  // 启动守护
+  gatewayGuardian.start();
+
+  // 🔄 心跳检测 - 自动恢复语音播报连接
+  let lastSuccessfulPing = Date.now();
+  let consecutiveFailures = 0;
+  let isRecovering = false; // 防止重复恢复
+
+  const heartbeatCheck = setInterval(async () => {
+    try {
+      const connected = await openclawClient.checkConnection();
+
+      if (connected) {
+        lastSuccessfulPing = Date.now();
+        consecutiveFailures = 0;
+        isRecovering = false;
+      } else {
+        consecutiveFailures++;
+        const timeSinceLastSuccess = Date.now() - lastSuccessfulPing;
+
+        // 如果连续失败3次且超过30秒没响应，尝试自动恢复
+        if (consecutiveFailures >= 3 && timeSinceLastSuccess > 30000 && !isRecovering) {
+          isRecovering = true;
+          console.log('🔄 检测到 OpenClaw 掉线，尝试自动恢复...');
+
+          if (voiceSystem) {
+            voiceSystem.speak('检测到连接断开，正在自动恢复');
+          }
+
+          // 重启 gateway
+          const result = await serviceManager.restartGateway();
+
+          if (result.success) {
+            // 重置计数
+            consecutiveFailures = 0;
+            lastSuccessfulPing = Date.now();
+
+            workLogger.log('success', '自动恢复成功');
+
+            if (voiceSystem) {
+              voiceSystem.speak('连接已自动恢复');
+            }
+          } else {
+            workLogger.logError(`自动恢复失败: ${result.error || '未知错误'}`);
+
+            // 恢复失败，等待下一次尝试
+            setTimeout(() => {
+              isRecovering = false;
+            }, 60000); // 1分钟后允许再次尝试
+          }
+
+          isRecovering = false;
+        }
+      }
+    } catch (err) {
+      console.error('心跳检测失败:', err.message);
+    }
+  }, 10000); // 每10秒检查一次
+
   // 监听服务状态变化
   serviceManager.on('status-change', (change) => {
     console.log(`🔧 服务状态变化: ${change.service} ${change.previousStatus} -> ${change.currentStatus}`);
-    
+
     if (mainWindow) {
       mainWindow.webContents.send('service-status', serviceManager.getStatus());
     }
-    
+
     // 更新托盘图标提示
     updateTrayTooltip();
-    
+
     // 🎙️ 服务状态播报
     if (change.currentStatus === 'stopped' && change.previousStatus === 'running') {
       showServiceNotification('OpenClaw 服务已断开', '点击托盘图标可重启服务');
@@ -236,6 +358,19 @@ async function createWindow() {
     } else if (change.currentStatus === 'running' && change.previousStatus !== 'running') {
       if (voiceSystem) {
         voiceSystem.speak('OpenClaw服务已连接', { priority: 'normal' });
+      }
+
+      // 🔄 Gateway 重启后自动重连
+      if (change.service === 'gateway') {
+        setTimeout(async () => {
+          try {
+            await openclawClient.checkConnection();
+            console.log('✅ Gateway 重启后已重新连接');
+            workLogger.log('success', 'Gateway 重启后已重新连接');
+          } catch (err) {
+            console.error('重连失败:', err.message);
+          }
+        }, 2000);
       }
     }
   });
@@ -265,6 +400,14 @@ async function createWindow() {
         content: payload.content,
         channel: 'lark'
       });
+      // 歌词窗口显示
+      if (lyricsWindow) {
+        lyricsWindow.webContents.send('show-lyric', {
+          text: payload.content,
+          type: 'user',
+          sender: payload.sender || '用户'
+        });
+      }
       workLogger.logMessage(payload.sender || '用户', payload.content);
       
       // 🔔 Windows 系统通知
@@ -291,6 +434,17 @@ async function createWindow() {
       mainWindow.webContents.send('agent-response', {
         content: payload.content
       });
+      // 歌词窗口显示（等语音播完后消失）
+      if (lyricsWindow) {
+        // 估算语音时长：中文约每字0.18秒，最少6秒
+        const estimatedDuration = Math.max(6000, (payload.content || '').length * 180 + 2000);
+        lyricsWindow.webContents.send('show-lyric', {
+          text: payload.content,
+          type: 'agent',
+          sender: '小K',
+          duration: estimatedDuration
+        });
+      }
       // 直接在这里触发语音,完整播放(最多500字符)
       if (payload.content && voiceSystem) {
         const maxLength = 800; // 增加到800字,约2-3分钟 // 增加到500字符,约1-2分钟
@@ -303,9 +457,13 @@ async function createWindow() {
   
   // 监听消息同步事件
   messageSync.on('new_message', (msg) => {
-    // 新消息到达,通知桌面并播报
     if (mainWindow) {
       mainWindow.webContents.send('new-message', msg);
+      if (lyricsWindow) {
+        lyricsWindow.webContents.send('show-lyric', {
+          text: msg.content, type: 'user', sender: msg.sender
+        });
+      }
       workLogger.logMessage(msg.sender, msg.content);
       console.log('📩 新消息:', msg.sender, '-', msg.content.substring(0, 50));
       
@@ -317,9 +475,13 @@ async function createWindow() {
   });
   
   messageSync.on('agent_response', (response) => {
-    // AI 回复,显示并播放语音
     if (mainWindow) {
       mainWindow.webContents.send('agent-response', response);
+      if (lyricsWindow) {
+        lyricsWindow.webContents.send('show-lyric', {
+          text: response.content, type: 'agent', sender: '小K'
+        });
+      }
       if (response.content) {
         voiceSystem.speak(response.content.substring(0, 200));
         workLogger.log('message', `我回复: ${response.content}`);
@@ -328,22 +490,22 @@ async function createWindow() {
   });
   
   messageSync.on('status_change', (status) => {
-    // 状态变化
     if (mainWindow) {
       mainWindow.webContents.send('status-update', status);
     }
   });
   
   mainWindow = new BrowserWindow({
-    width: 400,
-    height: 600,
-    x: petConfig.get('position')?.x || width - 450,
-    y: petConfig.get('position')?.y || height - 650,
+    width: 200,
+    height: 260,
+    x: petConfig.get('position')?.x || width - 200,
+    y: petConfig.get('position')?.y || height - 200,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    skipTaskbar: false,
+    skipTaskbar: true,
     resizable: false,
+    hasShadow: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -351,14 +513,54 @@ async function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
+
+  // 注入CSS强制禁止滚动条
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.insertCSS(`
+      html, body, * { overflow: hidden !important; scrollbar-width: none !important; }
+      ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+    `);
+  });
+
+  // 歌词窗口 — 桌面歌词效果
+  const petPos = mainWindow.getPosition();
+  const petSize = mainWindow.getSize();
+  lyricsWindow = new BrowserWindow({
+    width: 400,
+    height: 100,
+    x: petPos[0] - 100,
+    y: petPos[1] - 110,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    hasShadow: false,
+    focusable: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+
+  lyricsWindow.loadFile('lyrics.html');
+  lyricsWindow.setIgnoreMouseEvents(true); // 完全鼠标穿透！
   
   // 窗口加载完成后发送测试通知
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('🎉 窗口加载完成,发送测试通知');
+    console.log('🎉 精灵窗口加载完成');
     setTimeout(() => {
+      // 在歌词窗口显示欢迎消息
+      if (lyricsWindow) {
+        lyricsWindow.webContents.send('show-lyric', {
+          text: '龙虾待命 🦞',
+          type: 'system',
+          sender: '系统'
+        });
+      }
       mainWindow.webContents.send('new-message', {
         sender: '系统',
-        content: '桌面应用已启动!通知系统正常工作!',
+        content: '桌面应用已启动!',
         channel: 'system'
       });
     }, 2000);
@@ -366,9 +568,6 @@ async function createWindow() {
   
   // 开发模式打开开发者工具
   if (process.argv.includes('--dev')) {
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
-  } else {
-    // 总是打开开发者工具来调试
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
@@ -459,6 +658,21 @@ async function createWindow() {
     },
     { type: 'separator' },
     {
+      label: '🔄 恢复 Session',
+      click: async () => {
+        showServiceNotification('正在恢复...', '清理飞书会话缓存');
+        try {
+          const result = await mainWindow.webContents.executeJavaScript(
+            `require('electron').ipcRenderer.invoke('refresh-session')`
+          );
+          showServiceNotification('恢复成功', `已清理 ${result.sessions?.length || 0} 个会话`);
+        } catch(e) {
+          showServiceNotification('恢复失败', e.message);
+        }
+      }
+    },
+    { type: 'separator' },
+    {
       label: '退出',
       click: () => {
         app.quit();
@@ -476,18 +690,58 @@ async function createWindow() {
   });
 }
 
-// 监听来自渲染进程的消息
+// 拖动 — 精灵+歌词窗口同步
+ipcMain.on('drag-pet', (event, { x, y }) => {
+  if (!mainWindow) return;
+  // 设置精灵窗口位置（以鼠标位置为中心）
+  const newX = x - 100;
+  const newY = y - 80;
+  mainWindow.setPosition(newX, newY);
+  // 歌词窗口跟随（在球体上方）
+  if (lyricsWindow) {
+    lyricsWindow.setPosition(newX - 100, newY - 110);
+  }
+  petConfig.set('position', { x: newX, y: newY });
+});
+
 ipcMain.on('move-window', (event, { x, y }) => {
+  if (!mainWindow) return;
   const [currentX, currentY] = mainWindow.getPosition();
   const newX = currentX + x;
   const newY = currentY + y;
   mainWindow.setPosition(newX, newY);
-  // 保存新位置
+  if (lyricsWindow) {
+    lyricsWindow.setPosition(newX - 100, newY - 110);
+  }
   petConfig.set('position', { x: newX, y: newY });
 });
 
 ipcMain.on('quit-app', () => {
   app.quit();
+});
+
+// 三击查看历史消息
+ipcMain.handle('show-history', async () => {
+  try {
+    const logs = workLogger.getRecentMessages ? workLogger.getRecentMessages(20) : [];
+    // 在歌词窗口依次显示最近消息
+    if (lyricsWindow && logs.length > 0) {
+      const recent = logs.slice(-5); // 最近5条
+      for (let i = 0; i < recent.length; i++) {
+        setTimeout(() => {
+          lyricsWindow.webContents.send('show-lyric', {
+            text: recent[i].content || recent[i].message || '',
+            type: recent[i].sender === '小K' ? 'agent' : 'user',
+            sender: recent[i].sender || '',
+            duration: 8000
+          });
+        }, i * 2000);
+      }
+    }
+    return { success: true };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
 });
 
 // OpenClaw 消息处理
@@ -719,8 +973,81 @@ ipcMain.handle('service-logs', async (event, count) => {
   return serviceManager.getRecentLogs(count || 50);
 });
 
+// 🆘 刷新 Session - 清理损坏会话
+ipcMain.handle('refresh-session', async () => {
+  try {
+    const path = require('path');
+    const fs = require('fs');
+
+    const sessionDir = path.join(process.env.HOME || process.env.USERPROFILE, '.openclaw', 'agents', 'main', 'sessions');
+    const sessionFile = path.join(sessionDir, 'sessions.json');
+
+    // 读取 sessions.json 获取飞书对应的 session
+    let larkSessions = [];
+    let deletedCount = 0;
+
+    if (fs.existsSync(sessionFile)) {
+      const sessionsData = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+
+      // 查找所有 lark 相关的 session
+      for (const [key, value] of Object.entries(sessionsData)) {
+        if (key.includes('lark:') && value.sessionId) {
+          larkSessions.push(value.sessionId);
+        }
+      }
+    }
+
+    // 删除对应的 session 文件
+    for (const sessionId of larkSessions) {
+      const sessionPath = path.join(sessionDir, `${sessionId}.jsonl`);
+      const lockPath = path.join(sessionDir, `${sessionId}.jsonl.lock`);
+
+      if (fs.existsSync(sessionPath)) {
+        fs.unlinkSync(sessionPath);
+        deletedCount++;
+      }
+      if (fs.existsSync(lockPath)) {
+        fs.unlinkSync(lockPath);
+      }
+    }
+
+    // 记录日志
+    workLogger.log('action', `🆘 卡死脱离: 删除 ${deletedCount} 个会话`);
+
+    // 重启 gateway
+    if (serviceManager) {
+      await serviceManager.restartGateway();
+    }
+
+    // 语音提示
+    if (voiceSystem) {
+      voiceSystem.speak('会话已清理完成，从飞书发送任何消息即可恢复对话');
+    }
+
+    return {
+      success: true,
+      deleted: deletedCount,
+      sessions: larkSessions
+    };
+  } catch (err) {
+    workLogger.logError(`卡死脱离失败: ${err.message}`);
+    return {
+      success: false,
+      error: err.message
+    };
+  }
+});
+
 app.on('before-quit', () => {
+  // 清理歌词窗口
+  if (lyricsWindow && !lyricsWindow.isDestroyed()) {
+    lyricsWindow.destroy();
+    lyricsWindow = null;
+  }
   // 清理资源
+  if (gatewayGuardian) {
+    gatewayGuardian.stop();
+  }
   if (cacheManager) {
     cacheManager.stop();
   }

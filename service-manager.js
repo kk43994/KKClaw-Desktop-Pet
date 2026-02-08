@@ -141,7 +141,7 @@ class ServiceManager extends EventEmitter {
         });
     }
 
-    // 停止 Gateway (通过 taskkill)
+    // 停止 Gateway (通过 taskkill，但避免误杀桌面龙虾)
     async stopGateway() {
         this.log('info', '正在停止 Gateway...', 'gateway');
 
@@ -171,25 +171,56 @@ class ServiceManager extends EventEmitter {
                     return;
                 }
 
-                // 终止进程
+                // 检查 PID 是否是 Electron 进程（桌面龙虾）
+                const electronPid = process.pid;
+                const parentPid = process.ppid;
+
+                // 终止进程（但跳过 Electron 相关进程）
                 let killed = 0;
+                let skipped = 0;
                 pids.forEach(pid => {
-                    exec(`taskkill /PID ${pid} /F`, (err) => {
-                        killed++;
-                        if (killed === pids.size) {
-                            this.log('success', 'Gateway 已停止', 'gateway');
-                            this.services.gateway.status = 'stopped';
-                            this.emit('status-change', {
-                                service: 'gateway',
-                                previousStatus: 'running',
-                                currentStatus: 'stopped'
+                    // 不要杀掉桌面龙虾自己的进程
+                    if (pid === String(electronPid) || pid === String(parentPid)) {
+                        this.log('warn', `跳过 PID ${pid} (Electron 进程)`, 'gateway');
+                        skipped++;
+                        if (killed + skipped === pids.size) {
+                            this.finishStop(resolve);
+                        }
+                        return;
+                    }
+
+                    // 先尝试温和终止
+                    exec(`taskkill /PID ${pid}`, (err) => {
+                        if (err) {
+                            // 温和终止失败，使用强制终止
+                            exec(`taskkill /PID ${pid} /F`, () => {
+                                killed++;
+                                if (killed + skipped === pids.size) {
+                                    this.finishStop(resolve);
+                                }
                             });
-                            resolve({ success: true });
+                        } else {
+                            killed++;
+                            if (killed + skipped === pids.size) {
+                                this.finishStop(resolve);
+                            }
                         }
                     });
                 });
             });
         });
+    }
+
+    // 完成停止操作
+    finishStop(resolve) {
+        this.log('success', 'Gateway 已停止', 'gateway');
+        this.services.gateway.status = 'stopped';
+        this.emit('status-change', {
+            service: 'gateway',
+            previousStatus: 'running',
+            currentStatus: 'stopped'
+        });
+        resolve({ success: true });
     }
 
     // 重启 Gateway

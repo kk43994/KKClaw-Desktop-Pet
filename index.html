@@ -1,552 +1,616 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>Claw 🦞</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-        }
+<meta charset="UTF-8">
+<title>Claw 🦞</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+    *::-webkit-scrollbar { display: none; }
+    html, body {
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    }
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
 
-        body {
-            background: transparent;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-        }
+    /* ===== 流体球 67px ===== */
+    .pet-wrapper {
+        width: 67px;
+        height: 67px;
+        position: relative;
+        cursor: grab;
+        will-change: transform;
+    }
+    .pet-wrapper:active { cursor: grabbing; }
 
-        .container {
-            width: 400px;
-            height: 600px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
+    .inner-fluid {
+        position: absolute;
+        top: 3px; left: 3px; right: 3px; bottom: 3px;
+        border-radius: 50%;
+        overflow: hidden;
+        z-index: 1;
+        transition: background 1.5s ease;
+        background: linear-gradient(135deg, #ffb3b3, #fed6e3);
+    }
+    .fluid-blob {
+        position: absolute;
+        width: 130%; height: 130%; top: -15%; left: -15%;
+        transition: background 1.5s ease;
+        background:
+            radial-gradient(circle at 30% 30%, rgba(235,87,87,0.85), transparent 40%),
+            radial-gradient(circle at 70% 65%, rgba(255,154,108,0.8), transparent 40%);
+        animation: fluid-spin 8s linear infinite;
+    }
+    .fluid-blob-2 {
+        position: absolute;
+        width: 110%; height: 110%; top: -5%; left: -5%;
+        transition: background 1.5s ease;
+        background:
+            radial-gradient(circle at 60% 30%, rgba(255,200,150,0.4), transparent 35%),
+            radial-gradient(circle at 35% 70%, rgba(220,60,60,0.3), transparent 35%);
+        animation: fluid-spin-r 12s linear infinite;
+    }
 
-        /* 龙虾本体 - 明显的呼吸动画 */
-        .pet {
-            font-size: 100px;
-            cursor: grab;
-            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
-            animation: breathe 3s ease-in-out infinite;
-            transition: transform 0.2s ease, filter 0.3s ease;
-        }
+    .glass-shell {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        border-radius: 50%; z-index: 2;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12), rgba(255,255,255,0.03));
+        box-shadow:
+            inset -2px -2px 8px rgba(255,255,255,0.08),
+            inset 2px 2px 8px rgba(255,255,255,0.35),
+            0px 2px 6px rgba(220,80,80,0.08);
+        backdrop-filter: blur(1px);
+        border: 1px solid rgba(255,255,255,0.25);
+    }
+    .glass-shell::before {
+        content: '';
+        position: absolute; top: 12%; left: 18%; width: 28%; height: 14%;
+        border-radius: 50%; background: rgba(255,255,255,0.55);
+        filter: blur(1px); transform: rotate(-40deg);
+    }
 
-        .pet:hover {
-            transform: scale(1.08);
-            filter: drop-shadow(0 6px 16px rgba(102, 126, 234, 0.3));
-        }
+    /* 胶囊眼睛 — 大占比 */
+    .eyes-container {
+        position: absolute; z-index: 3;
+        top: 16%; left: 10%; width: 80%; height: 50%;
+        display: flex; justify-content: center; align-items: center;
+        gap: 12px;
+        pointer-events: none;
+        overflow: visible;
+    }
+    .eye {
+        width: 11px; height: 19px;
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.4);
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transform-origin: center center;
+    }
 
-        .pet:active {
-            cursor: grabbing;
-            transform: scale(0.92);
-        }
+    /* 腮红 */
+    .blush {
+        position: absolute; z-index: 3;
+        width: 14px; height: 8px; border-radius: 50%;
+        background: rgba(255,130,130,0.25); filter: blur(3px);
+        pointer-events: none; transition: all 0.4s ease; opacity: 0.8;
+    }
+    .blush-l { top: 58%; left: 8%; }
+    .blush-r { top: 58%; right: 8%; }
 
-        /* 不同状态的动画 */
-        .pet.thinking {
-            animation: think 1s ease-in-out infinite;
-        }
+    /* 气泡装饰 */
+    .bub {
+        position: absolute; border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(255,255,255,0.06));
+        border: 1px solid rgba(255,255,255,0.12);
+        z-index: 0; opacity: 0; pointer-events: none;
+    }
+    .bub-1 { width: 5px; height: 5px; left: -5px; top: 60%; animation: bub 5s ease-in infinite 0s; }
+    .bub-2 { width: 3px; height: 3px; right: -4px; top: 40%; animation: bub 6.5s ease-in infinite 2s; }
 
-        .pet.talking {
-            animation: talk 0.5s ease-in-out infinite;
-        }
+    .particles {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none; z-index: 10;
+    }
 
-        .pet.working {
-            animation: work 0.8s ease-in-out infinite;
-        }
+    /* ===== 图标工具栏 ===== */
+    .toolbar {
+        position: absolute;
+        top: calc(50% + 46px);
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+        z-index: 20;
+    }
+    .container:hover .toolbar {
+        opacity: 1;
+        pointer-events: auto;
+    }
 
-        .pet.happy {
-            animation: happy 0.6s ease-in-out 3;
-        }
+    .tool-icon {
+        width: 26px; height: 26px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.85);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .tool-icon svg {
+        width: 13px; height: 13px;
+        stroke: #666; fill: none;
+        stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .tool-icon:hover {
+        transform: scale(1.2);
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+    }
+    .tool-icon:active { transform: scale(0.9); }
+    .tool-icon.active {
+        background: rgba(255,255,255,1);
+        box-shadow: 0 0 8px rgba(255,255,255,0.5), 0 2px 8px rgba(0,0,0,0.15);
+    }
 
-        @keyframes breathe {
-            0%, 100% { 
-                transform: scale(1) translateY(0); 
-            }
-            50% { 
-                transform: scale(1.08) translateY(-8px); 
-            }
-        }
+    /* 输入条 */
+    .input-bar {
+        position: absolute;
+        top: calc(50% + 78px);
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        z-index: 20;
+    }
+    .input-bar.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .input-bar input {
+        width: 160px;
+        padding: 4px 10px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.85);
+        font-size: 11px;
+        outline: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .input-bar button {
+        padding: 4px 8px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.85);
+        font-size: 11px;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
 
-        @keyframes think {
-            0%, 100% { transform: rotate(-5deg); }
-            50% { transform: rotate(5deg); }
-        }
-
-        @keyframes talk {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1) translateY(-5px); }
-        }
-
-        @keyframes work {
-            0%, 100% { transform: translateX(0) rotate(0deg); }
-            25% { transform: translateX(-5px) rotate(-3deg); }
-            75% { transform: translateX(5px) rotate(3deg); }
-        }
-
-        @keyframes happy {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            25% { transform: scale(1.15) rotate(-10deg); }
-            75% { transform: scale(1.15) rotate(10deg); }
-        }
-
-        /* 对话气泡 - 位置下移 */
-        .bubble {
-            position: absolute;
-            top: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(12px);
-            padding: 10px 16px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            font-size: 12px;
-            color: #333;
-            min-width: 120px;
-            max-width: 320px;
-            word-wrap: break-word;
-            white-space: normal;
-            opacity: 0;
-            transition: opacity 0.25s ease;
-            pointer-events: none;
-            text-align: center;
-            line-height: 1.5;
-            z-index: 50;
-        }
-
-        .bubble.show {
-            opacity: 1;
-        }
-
-        /* 通知 - 精致 */
-        .notif {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
-            backdrop-filter: blur(15px);
-            color: white;
-            padding: 10px 18px;
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-            opacity: 0;
-            transition: all 0.3s ease;
-            max-width: 320px;
-            font-size: 11px;
-            z-index: 100;
-        }
-
-        .notif.show {
-            opacity: 1;
-            top: 20px;
-        }
-
-        .notif-sender {
-            font-weight: 600;
-            font-size: 10px;
-            opacity: 0.85;
-            margin-bottom: 3px;
-        }
-
-        /* 菜单 - 清爽 */
-        .menu {
-            position: absolute;
-            bottom: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 16px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s ease;
-            width: 260px;
-        }
-
-        .menu.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .menu-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #667eea;
-            margin-bottom: 12px;
-            text-align: center;
-        }
-
-        .input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1.5px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 12px;
-            margin-bottom: 10px;
-            transition: border 0.2s;
-        }
-
-        .input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .btn-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
-        .btn {
-            padding: 10px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn.alt {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-        }
-
-        /* 状态指示 - 紧靠龙虾 */
-        .status-dot {
-            position: absolute;
-            bottom: 45%;
-            right: 35%;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #ccc;
-            transition: background 0.3s;
-            border: 2px solid rgba(255,255,255,0.8);
-        }
-
-        .status-dot.on {
-            background: #4caf50;
-            box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
-        }
-
-        /* 关闭按钮 */
-        .close {
-            position: absolute;
-            top: -30px;
-            right: -30px;
-            width: 24px;
-            height: 24px;
-            background: rgba(255, 60, 60, 0.8);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 16px;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .container:hover .close {
-            opacity: 1;
-        }
-
-        .close:hover {
-            background: rgba(255, 30, 30, 1);
-        }
-    </style>
+    @keyframes fluid-spin {
+        0% { transform: rotate(0deg) scale(1); }
+        50% { transform: rotate(180deg) scale(1.08); }
+        100% { transform: rotate(360deg) scale(1); }
+    }
+    @keyframes fluid-spin-r {
+        0% { transform: rotate(360deg) scale(1.05); }
+        50% { transform: rotate(180deg) scale(0.95); }
+        100% { transform: rotate(0deg) scale(1.05); }
+    }
+    @keyframes bub {
+        0% { opacity: 0; transform: translateY(0) scale(0.3); }
+        15% { opacity: 0.5; }
+        100% { opacity: 0; transform: translateY(-30px) translateX(5px) scale(1); }
+    }
+    @keyframes squish {
+        0% { transform: scale(1, 1); }
+        25% { transform: scale(1.15, 0.85); }
+        50% { transform: scale(0.9, 1.1); }
+        75% { transform: scale(1.05, 0.95); }
+        100% { transform: scale(1, 1); }
+    }
+</style>
 </head>
 <body>
-    <div class="container">
-        <button class="close" onclick="closeApp()">×</button>
-        <div class="status-dot" id="status"></div>
-        <div class="notif" id="notif">
-            <div class="notif-sender" id="sender"></div>
-            <div id="content"></div>
+<div class="container">
+    <div class="pet-wrapper" id="pet">
+        <div class="inner-fluid" id="fluid">
+            <div class="fluid-blob" id="blob1"></div>
+            <div class="fluid-blob-2" id="blob2"></div>
         </div>
-        <div class="bubble" id="bubble"></div>
-        <div class="pet" id="pet">🦞</div>
-        
-        <div class="menu" id="menu">
-            <div class="menu-title">🦞 Claw</div>
-            <input type="text" class="input" id="input" placeholder="说点什么..." onkeypress="onKey(event)">
-            <div class="btn-grid">
-                <button class="btn" onclick="send()">💬 发送</button>
-                <button class="btn alt" onclick="toggleVoice()" id="voiceBtn">🔊 语音</button>
-                <button class="btn" onclick="feed()">⚡ 充能</button>
-                <button class="btn" onclick="play()">🎯 任务</button>
-            </div>
+        <div class="glass-shell"></div>
+        <div class="eyes-container" id="eyes">
+            <div class="eye" id="eyeL"></div>
+            <div class="eye" id="eyeR"></div>
+        </div>
+        <div class="blush blush-l" id="blushL"></div>
+        <div class="blush blush-r" id="blushR"></div>
+        <div class="bub bub-1"></div>
+        <div class="bub bub-2"></div>
+        <div class="particles" id="particles"></div>
+    </div>
+
+    <!-- 图标工具栏 -->
+    <div class="toolbar" id="toolbar">
+        <div class="tool-icon" id="btnChat" title="发消息" onclick="toggleInput()">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="tool-icon" id="btnVoice" title="语音" onclick="toggleVoice()">
+            <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </div>
+        <div class="tool-icon" id="btnScreenshot" title="截图" onclick="screenshot()">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
         </div>
     </div>
 
-    <script>
-        let ipcRenderer;
-        try {
-            ipcRenderer = require('electron').ipcRenderer;
-            console.log('✅ IPC Ready');
-        } catch (err) {
-            console.error('❌ IPC Failed');
-        }
+    <!-- 输入条 -->
+    <div class="input-bar" id="inputBar">
+        <input type="text" id="input" placeholder="说点什么..." onkeypress="if(event.key==='Enter')send()">
+        <button onclick="send()">↑</button>
+    </div>
+</div>
 
-        const pet = document.getElementById('pet');
-        const bubble = document.getElementById('bubble');
-        const notif = document.getElementById('notif');
-        const sender = document.getElementById('sender');
-        const content = document.getElementById('content');
-        const menu = document.getElementById('menu');
-        const input = document.getElementById('input');
-        const status = document.getElementById('status');
-        const voiceBtn = document.getElementById('voiceBtn');
+<script>
+let ipcRenderer;
+try { ipcRenderer = require('electron').ipcRenderer; } catch(e) {}
 
-        let voiceOn = true; // 默认开启语音
-        let dragging = false;
-        let startX, startY;
-        let currentMood = 'normal';
-        let idleTimer = null;
+const pet = document.getElementById('pet');
+const eyeL = document.getElementById('eyeL');
+const eyeR = document.getElementById('eyeR');
+const fluid = document.getElementById('fluid');
+const blob1 = document.getElementById('blob1');
+const blob2 = document.getElementById('blob2');
+const blushL = document.getElementById('blushL');
+const blushR = document.getElementById('blushR');
+const particlesEl = document.getElementById('particles');
+const inputBar = document.getElementById('inputBar');
+const inputEl = document.getElementById('input');
+const btnVoice = document.getElementById('btnVoice');
 
-        // 表情库 - 根据情绪
-        const emotions = {
-            normal: '🦞',
-            happy: '🦞',
-            thinking: '🤔',
-            busy: '💼',
-            sleepy: '😴',
-            excited: '🎉'
-        };
+let voiceOn = true;
+let isConnected = false;
 
-        const pets = ['🦞', '🦀', '🦐', '🦑', '🐙', '🐠'];
-        const msgs = {
-            feed: ['嚼嚼~', '好吃!', '满足~', '能量+100!'],
-            play: ['冲!', '走起!', '嘿!', '横行霸道!'],
-            idle: ['...', '嗯?', '在呢~', '有事?', '*挥钳*', '*横着走*']
-        };
+// ===== 60fps 动画 =====
+let t = 0, squishing = false, targetScale = 1, curScale = 1, breathExtra = 0;
 
-        // 切换表情
-        function setMood(mood) {
-            currentMood = mood;
-            if (emotions[mood]) {
-                pet.textContent = emotions[mood];
-            }
-        }
+function loop() {
+    t += 0.016;
+    curScale += (targetScale - curScale) * 0.08;
+    const floatY = Math.sin(t * 1.3) * 5;
+    const floatR = Math.sin(t * 0.9) * 0.4;
+    const breathScale = 1 + Math.sin(t * 2) * 0.012;
+    const bounce = breathExtra > 0 ? Math.sin(t * 12) * breathExtra : 0;
+    if (!squishing) {
+        pet.style.transform = `translateY(${floatY + bounce}px) rotate(${floatR}deg) scale(${curScale * breathScale})`;
+    }
+    requestAnimationFrame(loop);
+}
+loop();
 
-        // 闲置动画
-        function startIdleTimer() {
-            clearTimeout(idleTimer);
-            idleTimer = setTimeout(() => {
-                // 10秒无操作后随机动作
-                const randomMsg = msgs.idle[Math.floor(Math.random() * msgs.idle.length)];
-                showBubble(randomMsg);
-                
-                // 随机小动作
-                const actions = ['jump', 'wiggle'];
-                const action = actions[Math.floor(Math.random() * actions.length)];
-                
-                if (action === 'jump') {
-                    pet.style.transform = 'translateY(-15px)';
-                    setTimeout(() => pet.style.transform = '', 200);
-                } else {
-                    pet.style.transform = 'rotate(10deg)';
-                    setTimeout(() => {
-                        pet.style.transform = 'rotate(-10deg)';
-                        setTimeout(() => pet.style.transform = '', 200);
-                    }, 150);
-                }
-                
-                // 继续下一轮闲置
-                startIdleTimer();
-            }, 10000);
-        }
+// ===== 眼睛表情 =====
+function setEyes(L, R) {
+    const d = { w:11, h:19, br:'6px', tx:0, ty:0, sx:1, sy:1, rot:0 };
+    const l = { ...d, ...L };
+    const r = R ? { ...d, ...R } : { ...l };
+    eyeL.style.width = l.w+'px'; eyeL.style.height = l.h+'px'; eyeL.style.borderRadius = l.br;
+    eyeL.style.transform = `translate(${l.tx}px,${l.ty}px) scale(${l.sx},${l.sy}) rotate(${l.rot}deg)`;
+    eyeR.style.width = r.w+'px'; eyeR.style.height = r.h+'px'; eyeR.style.borderRadius = r.br;
+    eyeR.style.transform = `translate(${r.tx}px,${r.ty}px) scale(${r.sx},${r.sy}) rotate(${r.rot}deg)`;
+}
 
-        // 重置闲置计时
-        function resetIdle() {
-            startIdleTimer();
-        }
+const EXPR = {
+    normal:     () => setEyes({ w:11, h:19, br:'6px' }),
+    blink:      () => setEyes({ w:12, h:3, br:'3px' }),
+    halfBlink:  () => setEyes({ w:11, h:10, br:'5px' }),
+    happy:      () => setEyes({ w:13, h:7, br:'7px 7px 3px 3px', ty:1 }),
+    superHappy: () => setEyes({ w:15, h:5, br:'8px 8px 3px 3px', ty:1, sx:1.1 }),
+    giggle:     () => setEyes(
+        { w:13, h:7, br:'7px 7px 3px 3px', ty:1, rot:-8 },
+        { w:13, h:7, br:'7px 7px 3px 3px', ty:1, rot:8 }
+    ),
+    surprised:  () => setEyes({ w:13, h:21, br:'7px' }),
+    curious:    () => setEyes(
+        { w:9, h:16, br:'5px', ty:-1 },
+        { w:13, h:21, br:'7px', ty:-1 }
+    ),
+    wow:        () => setEyes({ w:16, h:16, br:'8px' }),
+    thinking:   () => setEyes({ w:10, h:17, br:'5px', ty:-3 }),
+    lookLeft:   () => setEyes({ w:11, h:19, br:'6px', tx:-4 }),
+    lookRight:  () => setEyes({ w:11, h:19, br:'6px', tx:4 }),
+    hmm:        () => setEyes(
+        { w:11, h:16, br:'5px', ty:-1, rot:8 },
+        { w:9, h:13, br:'5px', ty:0, rot:-8 }
+    ),
+    sleepy:     () => setEyes({ w:12, h:4, br:'4px', ty:2 }),
+    drowsy:     () => setEyes({ w:11, h:10, br:'5px', ty:1 }),
+    sparkle:    () => setEyes({ w:12, h:12, br:'3px', rot:45 }),
+    sad:        () => setEyes({ w:10, h:16, br:'5px', ty:3, sy:0.9 }),
+    wink:       () => setEyes(
+        { w:13, h:7, br:'7px 7px 3px 3px', ty:1 },
+        { w:11, h:19, br:'6px' }
+    ),
+    winkR:      () => setEyes(
+        { w:11, h:19, br:'6px' },
+        { w:13, h:7, br:'7px 7px 3px 3px', ty:1 }
+    ),
+    talking:    () => setEyes({ w:10, h:17, br:'5px' }),
+    talkBig:    () => setEyes({ w:12, h:20, br:'6px' }),
+};
 
-        // 拖动
-        pet.addEventListener('mousedown', e => {
-            dragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
+// ===== 鼠标跟随 =====
+let mouseTracking = true;
+document.addEventListener('mousemove', (e) => {
+    if (!mouseTracking) return;
+    const rect = pet.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const dx = Math.max(-2, Math.min(2, (e.clientX - cx) / window.innerWidth * 6));
+    const dy = Math.max(-2, Math.min(2, (e.clientY - cy) / window.innerHeight * 6));
+    eyeL.style.transform = `translate(${dx}px,${dy}px)`;
+    eyeR.style.transform = `translate(${dx}px,${dy}px)`;
+});
+
+// ===== 眨眼 =====
+function doBlink() {
+    if (currentMood === 'sleepy' || currentMood === 'happy') { schedBlink(); return; }
+    mouseTracking = false;
+    EXPR.blink();
+    setTimeout(() => {
+        if (Math.random() < 0.2) {
+            EXPR.halfBlink();
+            setTimeout(() => { EXPR.blink(); setTimeout(() => { applyMoodEyes(); mouseTracking = true; }, 80); }, 120);
+        } else { applyMoodEyes(); mouseTracking = true; }
+    }, 70 + Math.random() * 40);
+    schedBlink();
+}
+function schedBlink() { setTimeout(doBlink, 2000 + Math.random() * 4000); }
+schedBlink();
+
+// ===== 点击 =====
+let isDrag = false, startX, startY, clickCount = 0, clickTimer = null;
+
+pet.addEventListener('mousedown', e => { isDrag = false; startX = e.screenX; startY = e.screenY; });
+document.addEventListener('mousemove', e => {
+    if (startX !== undefined) {
+        if (Math.abs(e.screenX - startX) > 3 || Math.abs(e.screenY - startY) > 3) isDrag = true;
+    }
+    if (isDrag && ipcRenderer) {
+        ipcRenderer.send('drag-pet', { x: e.screenX, y: e.screenY });
+    }
+});
+document.addEventListener('mouseup', () => { setTimeout(() => { isDrag = false; startX = undefined; }, 30); });
+
+pet.addEventListener('click', () => {
+    if (isDrag) return;
+    clickCount++;
+    clearTimeout(clickTimer);
+    squishing = true;
+    pet.style.animation = 'squish 0.35s ease';
+    setTimeout(() => { pet.style.animation = ''; squishing = false; }, 350);
+    spawnParticles();
+    mouseTracking = false;
+
+    if (clickCount >= 3) {
+        EXPR.superHappy();
+        blushL.style.background = 'rgba(255,100,100,0.6)';
+        blushR.style.background = 'rgba(255,100,100,0.6)';
+        targetScale = 1.1;
+        // 三击打开历史消息
+        if (ipcRenderer) ipcRenderer.invoke('show-history');
+        setTimeout(() => { resetClick(); clickCount = 0; }, 1200);
+    } else {
+        const rr = ['happy','wink','winkR','surprised','curious','giggle','sparkle','wow'];
+        EXPR[rr[Math.floor(Math.random()*rr.length)]]();
+        clickTimer = setTimeout(() => { resetClick(); clickCount = 0; }, 800);
+    }
+});
+
+function resetClick() {
+    applyMoodEyes();
+    blushL.style.background = ''; blushR.style.background = '';
+    targetScale = MOODS[currentMood]?.scale || 1;
+    mouseTracking = true;
+}
+
+function spawnParticles() {
+    const colors = ['#ff6b6b','#ffa07a','#ffb347','#ff69b4','#fff','#ffd700'];
+    for (let i = 0; i < 8; i++) {
+        const p = document.createElement('div');
+        const sz = 2 + Math.random() * 3;
+        const a = (Math.PI * 2 / 8) * i + Math.random() * 0.4;
+        const dist = 15 + Math.random() * 25;
+        p.style.cssText = `position:absolute;border-radius:50%;pointer-events:none;
+            width:${sz}px;height:${sz}px;
+            background:${colors[Math.floor(Math.random()*colors.length)]};
+            left:50%;top:50%;opacity:1;
+            transition:transform 0.4s ease-out,opacity 0.4s ease-out;`;
+        particlesEl.appendChild(p);
+        requestAnimationFrame(() => {
+            p.style.transform = `translate(${Math.cos(a)*dist}px,${Math.sin(a)*dist}px)`;
+            p.style.opacity = '0';
         });
+        setTimeout(() => p.remove(), 450);
+    }
+}
 
-        document.addEventListener('mousemove', e => {
-            if (dragging && ipcRenderer) {
-                ipcRenderer.send('move-window', {
-                    x: e.clientX - startX,
-                    y: e.clientY - startY
-                });
-                startX = e.clientX;
-                startY = e.clientY;
-            }
-        });
+// ===== 情绪 =====
+const MOODS = {
+    offline:   { fluid:'linear-gradient(135deg,#b0b0b0,#d0d0d0)', b1:'radial-gradient(circle at 30% 30%,rgba(140,140,140,0.6),transparent 40%),radial-gradient(circle at 70% 65%,rgba(160,160,160,0.5),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(170,170,170,0.3),transparent 35%),radial-gradient(circle at 35% 70%,rgba(130,130,130,0.2),transparent 35%)', eyes:'sleepy', scale:0.93, bounce:0, speed:'20s' },
+    idle:      { fluid:'linear-gradient(135deg,#ffb3b3,#fed6e3)', b1:'radial-gradient(circle at 30% 30%,rgba(235,87,87,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(255,154,108,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(255,200,150,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(220,60,60,0.3),transparent 35%)', eyes:'normal', scale:1, bounce:0, speed:'8s' },
+    happy:     { fluid:'linear-gradient(135deg,#ffe0b3,#ffcccc)', b1:'radial-gradient(circle at 30% 30%,rgba(255,183,77,0.9),transparent 40%),radial-gradient(circle at 70% 65%,rgba(255,107,107,0.85),transparent 40%)', b2:'radial-gradient(circle at 50% 50%,rgba(255,215,0,0.4),transparent 40%),radial-gradient(circle at 35% 70%,rgba(255,140,0,0.3),transparent 35%)', eyes:'happy', scale:1.05, bounce:0.02, speed:'5s' },
+    talking:   { fluid:'linear-gradient(135deg,#ffb3b3,#ffd6e3)', b1:'radial-gradient(circle at 30% 30%,rgba(235,87,87,0.9),transparent 40%),radial-gradient(circle at 70% 65%,rgba(255,130,90,0.85),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(255,180,130,0.5),transparent 35%),radial-gradient(circle at 35% 70%,rgba(230,70,70,0.35),transparent 35%)', eyes:'talking', scale:1, bounce:0.015, speed:'4s' },
+    thinking:  { fluid:'linear-gradient(135deg,#b3d4ff,#e3d6fe)', b1:'radial-gradient(circle at 30% 30%,rgba(100,150,235,0.8),transparent 40%),radial-gradient(circle at 70% 65%,rgba(150,100,220,0.7),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(180,200,255,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(120,80,200,0.3),transparent 35%)', eyes:'thinking', scale:1, bounce:0, speed:'12s' },
+    sleepy:    { fluid:'linear-gradient(135deg,#d4c3c3,#e8dede)', b1:'radial-gradient(circle at 30% 30%,rgba(180,140,140,0.6),transparent 40%),radial-gradient(circle at 70% 65%,rgba(200,160,140,0.5),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(200,180,170,0.3),transparent 35%),radial-gradient(circle at 35% 70%,rgba(170,130,130,0.2),transparent 35%)', eyes:'sleepy', scale:0.97, bounce:0, speed:'16s' },
+    surprised: { fluid:'linear-gradient(135deg,#ffe6b3,#ffddcc)', b1:'radial-gradient(circle at 30% 30%,rgba(255,200,50,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(255,120,80,0.8),transparent 40%)', b2:'radial-gradient(circle at 50% 50%,rgba(255,230,100,0.4),transparent 40%),radial-gradient(circle at 35% 70%,rgba(255,150,50,0.3),transparent 35%)', eyes:'surprised', scale:1.06, bounce:0, speed:'6s' },
+};
 
-        document.addEventListener('mouseup', () => {
-            dragging = false;
-        });
+let currentMood = 'idle', talkInterval = null;
 
-        // 点击
-        pet.addEventListener('click', () => {
-            if (!dragging) {
-                menu.classList.toggle('show');
-                resetIdle();
-            }
-        });
+function applyMoodEyes() {
+    const m = MOODS[currentMood];
+    if (m && EXPR[m.eyes]) EXPR[m.eyes]();
+}
 
-        // IPC 事件
-        if (ipcRenderer) {
-            ipcRenderer.on('new-message', (e, msg) => {
-                console.log('📩', msg);
-                setMood('busy');
-                pet.classList.add('working');
-                showNotif(msg.sender, msg.content);
-                setTimeout(() => {
-                    pet.classList.remove('working');
-                    setMood('normal');
-                }, 800);
-                resetIdle();
-            });
+function setMood(mood) {
+    const map = { normal:'idle', busy:'talking', excited:'happy' };
+    mood = map[mood] || mood;
+    if (!MOODS[mood]) mood = 'idle';
+    const m = MOODS[mood];
+    currentMood = mood;
+    fluid.style.background = m.fluid;
+    blob1.style.background = m.b1; blob2.style.background = m.b2;
+    blob1.style.animationDuration = m.speed;
+    blob1.style.opacity = mood === 'sleepy' ? '0.6' : '1';
+    targetScale = m.scale; breathExtra = m.bounce;
+    mouseTracking = (mood !== 'sleepy' && mood !== 'happy');
+    if (talkInterval) { clearInterval(talkInterval); talkInterval = null; }
+    if (mood === 'talking') {
+        let tog = false;
+        talkInterval = setInterval(() => { tog=!tog; tog ? EXPR.talkBig() : EXPR.talking(); }, 250);
+    } else { applyMoodEyes(); }
+    if (mood === 'happy') {
+        blushL.style.background = 'rgba(255,120,120,0.4)';
+        blushR.style.background = 'rgba(255,120,120,0.4)';
+    } else { blushL.style.background = ''; blushR.style.background = ''; }
+}
 
-            ipcRenderer.on('agent-response', (e, res) => {
-                console.log('🤖', res);
-                setMood('happy');
-                pet.classList.add('talking');
-                showBubble(res.content);
-                // 语音由main.js触发,这里不重复调用
-                setTimeout(() => {
-                    pet.classList.remove('talking');
-                    setMood('normal');
-                }, 3000);
-                resetIdle();
-            });
+// ===== 待机微表情 =====
+const idleActs = [
+    () => { EXPR.lookLeft(); setTimeout(() => { EXPR.lookRight(); setTimeout(() => EXPR.normal(), 500); }, 500); },
+    () => { EXPR.curious(); setTimeout(() => EXPR.normal(), 800); },
+    () => { EXPR.happy(); setTimeout(() => EXPR.normal(), 1000); },
+    () => { EXPR.drowsy(); setTimeout(() => { EXPR.sleepy(); setTimeout(() => { EXPR.surprised(); setTimeout(() => EXPR.normal(), 300); }, 600); }, 400); },
+    () => { EXPR.wink(); setTimeout(() => EXPR.normal(), 700); },
+    () => { EXPR.hmm(); setTimeout(() => EXPR.normal(), 800); },
+    () => { EXPR.sparkle(); setTimeout(() => EXPR.normal(), 500); },
+];
+setInterval(() => {
+    if (currentMood !== 'idle' || !mouseTracking) return;
+    if (Math.random() < 0.3) {
+        mouseTracking = false;
+        idleActs[Math.floor(Math.random() * idleActs.length)]();
+        setTimeout(() => { mouseTracking = true; }, 1500);
+    }
+}, 4000);
 
-            ipcRenderer.on('status-update', (e, s) => {
-                status.classList.toggle('on', s.connected);
-            });
+// ===== 工具栏 =====
+function toggleInput() {
+    inputBar.classList.toggle('show');
+    if (inputBar.classList.contains('show')) inputEl.focus();
+}
+
+function toggleVoice() {
+    voiceOn = !voiceOn;
+    btnVoice.innerHTML = voiceOn
+        ? '<svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>'
+        : '<svg viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.12 1.5-.35 2.18"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+    btnVoice.classList.toggle('active', voiceOn);
+    if (ipcRenderer) ipcRenderer.invoke('set-voice-enabled', voiceOn);
+    setMood('happy');
+    setTimeout(() => setMood('idle'), 1500);
+}
+
+async function screenshot() {
+    if (!ipcRenderer) return;
+    setMood('thinking');
+    const result = await ipcRenderer.invoke('take-screenshot', 'manual');
+    if (result.success) {
+        setMood('happy');
+        setTimeout(() => setMood('idle'), 2000);
+    } else { setMood('idle'); }
+}
+
+async function send() {
+    const msg = inputEl.value.trim();
+    if (!msg || !ipcRenderer) return;
+    inputEl.value = '';
+    inputBar.classList.remove('show');
+    setMood('thinking');
+    const reply = await ipcRenderer.invoke('openclaw-send', msg);
+    if (reply) { setMood('happy'); setTimeout(() => setMood('idle'), 3000); }
+}
+
+// ===== IPC =====
+if (ipcRenderer) {
+    ipcRenderer.on('new-message', (e, msg) => {
+        setMood('talking');
+        setTimeout(() => setMood('idle'), 3000);
+    });
+    ipcRenderer.on('agent-response', (e, res) => {
+        setMood('happy');
+        setTimeout(() => setMood('idle'), 5000);
+    });
+    ipcRenderer.on('status-update', (e, s) => {
+        const wasConnected = isConnected;
+        isConnected = s.connected;
+        if (!wasConnected && isConnected) {
+            // 复活动画！从灰色→彩色
+            setMood('happy');
+            squishing = true;
+            pet.style.animation = 'squish 0.5s ease';
+            setTimeout(() => { pet.style.animation = ''; squishing = false; }, 500);
+            spawnParticles();
+            spawnParticles(); // 双倍粒子庆祝
+            setTimeout(() => setMood('idle'), 3000);
+        } else if (wasConnected && !isConnected) {
+            setMood('offline');
         }
+    });
+}
 
-        function showNotif(s, c) {
-            sender.textContent = s;
-            content.textContent = c.substring(0, 50) + (c.length > 50 ? '...' : '');
-            notif.classList.add('show');
-            setTimeout(() => notif.classList.remove('show'), 2500);
+// 状态检查
+if (ipcRenderer) {
+    setInterval(async () => {
+        const s = await ipcRenderer.invoke('openclaw-status');
+        const wasConnected = isConnected;
+        isConnected = s.connected;
+        if (!wasConnected && isConnected && currentMood === 'offline') {
+            // 复活！
+            setMood('happy');
+            squishing = true;
+            pet.style.animation = 'squish 0.5s ease';
+            setTimeout(() => { pet.style.animation = ''; squishing = false; }, 500);
+            spawnParticles();
+            spawnParticles();
+            setTimeout(() => setMood('idle'), 3000);
+        } else if (!isConnected && currentMood !== 'offline') {
+            setMood('offline');
         }
+    }, 10000);
+}
 
-        function showBubble(text) {
-            bubble.textContent = text.substring(0, 150); // 增加到150字符
-            bubble.classList.add('show');
-            setTimeout(() => bubble.classList.remove('show'), 5000); // 延长到5秒
+// 初始化 — 先显示离线，等连接成功后复活
+setMood('offline');
+if (ipcRenderer) {
+    setTimeout(async () => {
+        const s = await ipcRenderer.invoke('openclaw-status');
+        isConnected = s.connected;
+        if (isConnected) {
+            setMood('happy');
+            squishing = true;
+            pet.style.animation = 'squish 0.5s ease';
+            setTimeout(() => { pet.style.animation = ''; squishing = false; }, 500);
+            spawnParticles();
+            setTimeout(() => setMood('idle'), 2000);
         }
-
-        async function send() {
-            const msg = input.value.trim();
-            if (!msg || !ipcRenderer) return;
-            
-            input.value = '';
-            setMood('thinking');
-            pet.classList.add('thinking');
-            showBubble('思考中...');
-            
-            const reply = await ipcRenderer.invoke('openclaw-send', msg);
-            pet.classList.remove('thinking');
-            
-            if (reply) {
-                setMood('happy');
-                pet.classList.add('talking');
-                showBubble(reply.substring(0, 150));
-                setTimeout(() => {
-                    pet.classList.remove('talking');
-                    setMood('normal');
-                }, 2000);
-            }
-            resetIdle();
-        }
-
-        function onKey(e) {
-            if (e.key === 'Enter') send();
-        }
-
-        function toggleVoice() {
-            voiceOn = !voiceOn;
-            voiceBtn.textContent = voiceOn ? '🔇' : '🔊';
-            voiceBtn.classList.toggle('alt', voiceOn);
-            setMood('excited');
-            pet.classList.add('happy');
-            showBubble(voiceOn ? '语音已开启' : '语音已关闭');
-            setTimeout(() => {
-                pet.classList.remove('happy');
-                setMood('normal');
-            }, 1800);
-            resetIdle();
-        }
-
-        function feed() {
-            setMood('excited');
-            pet.classList.add('happy');
-            showBubble(msgs.feed[Math.floor(Math.random() * msgs.feed.length)]);
-            setTimeout(() => {
-                pet.classList.remove('happy');
-                setMood('normal');
-            }, 1800);
-            menu.classList.remove('show');
-            resetIdle();
-        }
-
-        function play() {
-            setMood('busy');
-            pet.classList.add('working');
-            showBubble(msgs.play[Math.floor(Math.random() * msgs.play.length)]);
-            setTimeout(() => {
-                pet.classList.remove('working');
-                setMood('normal');
-            }, 2400);
-            menu.classList.remove('show');
-            resetIdle();
-        }
-
-        function closeApp() {
-            if (ipcRenderer) ipcRenderer.send('quit-app');
-        }
-
-        // 状态检查
-        if (ipcRenderer) {
-            setInterval(async () => {
-                const s = await ipcRenderer.invoke('openclaw-status');
-                status.classList.toggle('on', s.connected);
-            }, 10000);
-        }
-
-        // 点击外部关闭菜单
-        document.addEventListener('click', e => {
-            if (!pet.contains(e.target) && !menu.contains(e.target)) {
-                menu.classList.remove('show');
-            }
-        });
-
-        // 初始化
-        voiceBtn.textContent = '🔇'; // 因为默认开启
-        voiceBtn.classList.add('alt');
-        setMood('normal');
-        setTimeout(() => {
-            showBubble('龙虾待命 🦞 (语音已开启)');
-            startIdleTimer(); // 启动闲置计时
-        }, 1000);
-    </script>
+    }, 1500);
+}
+</script>
 </body>
 </html>
