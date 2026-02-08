@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦞 Claw Desktop Pet — Give OpenClaw a Body</title>
+    <title>Claw Desktop Pet — Give OpenClaw a Body</title>
     <meta name="description" content="A transparent Electron desktop companion for OpenClaw with emotional TTS, fluid glass ball UI, and desktop-lyrics style messages.">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -28,8 +28,70 @@
             line-height: 1.6;
             overflow-x: hidden;
         }
-        
-        /* Hero */
+
+        /* ===== SVG Icon System ===== */
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+        }
+        .icon-lg { width: 2rem; height: 2rem; }
+        .icon-xl { width: 2.5rem; height: 2.5rem; }
+
+        /* ===== Navigation ===== */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            background: rgba(10,10,10,0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 0.7rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover { color: var(--text); }
+
+        .lang-switch {
+            display: flex;
+            gap: 0.3rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 0.2rem;
+        }
+        .lang-btn {
+            padding: 0.2rem 0.6rem;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .lang-btn.active { background: var(--primary); color: white; }
+
+        /* ===== Hero ===== */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -37,30 +99,118 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 2rem;
+            padding: 6rem 2rem 2rem;
             position: relative;
             overflow: hidden;
         }
-        
+
         .hero::before {
             content: '';
             position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(255,107,74,0.15) 0%, transparent 70%);
-            top: 50%;
-            left: 50%;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(255,107,74,0.12) 0%, transparent 70%);
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            animation: pulse 4s ease-in-out infinite;
+            animation: heroPulse 4s ease-in-out infinite;
         }
-        
-        @keyframes pulse {
+
+        @keyframes heroPulse {
             0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
             50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
         }
-        
-        .hero-emoji { font-size: 4rem; margin-bottom: 1rem; position: relative; }
-        
+
+        /* ===== Interactive Ball Demo ===== */
+        .demo-ball-container {
+            position: relative;
+            width: 120px;
+            height: 140px;
+            margin-bottom: 1.5rem;
+            cursor: grab;
+            z-index: 10;
+        }
+        .demo-ball-container:active { cursor: grabbing; }
+
+        .demo-ball {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            background: radial-gradient(circle at 35% 35%, #FF9A76, #FF6B4A 40%, #E8491D 80%);
+            box-shadow:
+                0 0 40px rgba(255,107,74,0.4),
+                0 0 80px rgba(255,107,74,0.15),
+                inset 0 -8px 20px rgba(0,0,0,0.2),
+                inset 0 8px 20px rgba(255,255,255,0.15);
+            animation: ballFloat 3s ease-in-out infinite;
+            transition: background 1.5s ease, box-shadow 1.5s ease;
+        }
+
+        @keyframes ballFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .demo-ball.squish {
+            animation: squishAnim 0.35s ease;
+        }
+        @keyframes squishAnim {
+            0% { transform: scale(1,1); }
+            30% { transform: scale(1.15,0.88); }
+            60% { transform: scale(0.92,1.08); }
+            100% { transform: scale(1,1); }
+        }
+
+        /* Eyes */
+        .demo-eyes {
+            position: absolute;
+            top: 42px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .demo-eye {
+            width: 8px;
+            height: 14px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 0 6px rgba(255,255,255,0.6);
+            transition: all 0.15s ease;
+        }
+        .demo-eye.blink { height: 2px; border-radius: 2px; }
+
+        /* Particles */
+        .demo-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .demo-particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: var(--primary);
+            opacity: 0;
+        }
+
+        .demo-label {
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            white-space: nowrap;
+            opacity: 0.7;
+        }
+
         .hero h1 {
             font-size: clamp(2rem, 5vw, 3.5rem);
             font-weight: 700;
@@ -70,15 +220,15 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        
+
         .hero .subtitle {
-            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
             color: var(--text-dim);
             margin-bottom: 2rem;
             max-width: 600px;
             position: relative;
         }
-        
+
         .hero-buttons {
             display: flex;
             gap: 1rem;
@@ -86,7 +236,7 @@
             justify-content: center;
             position: relative;
         }
-        
+
         .btn {
             padding: 0.8rem 1.8rem;
             border-radius: 12px;
@@ -97,66 +247,70 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            border: none;
+            cursor: pointer;
         }
-        
+
         .btn-primary {
             background: var(--primary);
             color: white;
-            border: none;
         }
-        
         .btn-primary:hover {
             background: var(--primary-light);
             transform: translateY(-2px);
             box-shadow: 0 8px 30px rgba(255,107,74,0.3);
         }
-        
         .btn-outline {
             background: transparent;
             color: var(--text);
             border: 1.5px solid var(--card-border);
         }
-        
         .btn-outline:hover {
             border-color: var(--primary);
             color: var(--primary);
             transform: translateY(-2px);
         }
-        
-        /* Preview */
+
+        /* Preview image */
         .preview {
             margin-top: 3rem;
             position: relative;
         }
-        
         .preview img {
             max-width: min(90vw, 700px);
             border-radius: 16px;
             border: 1px solid var(--card-border);
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
-        
-        /* Sections */
+
+        /* ===== Sections ===== */
         section {
             max-width: 1100px;
             margin: 0 auto;
             padding: 5rem 2rem;
         }
-        
         .section-title {
             font-size: 2rem;
             font-weight: 700;
             text-align: center;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-dim);
             margin-bottom: 3rem;
         }
-        
-        /* Features Grid */
+
+        /* ===== Features Grid ===== */
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
         }
-        
         .feature-card {
             background: var(--card);
             border: 1px solid var(--card-border);
@@ -164,48 +318,149 @@
             padding: 2rem;
             transition: all 0.3s;
         }
-        
         .feature-card:hover {
             border-color: var(--primary);
             transform: translateY(-4px);
             box-shadow: 0 8px 30px rgba(255,107,74,0.1);
         }
-        
-        .feature-icon { font-size: 2rem; margin-bottom: 1rem; }
-        .feature-card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .feature-icon {
+            width: 48px; height: 48px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(255,107,74,0.1);
+        }
+        .feature-icon svg { width: 24px; height: 24px; stroke: var(--primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .feature-card h3 { font-size: 1.15rem; margin-bottom: 0.5rem; }
         .feature-card p { color: var(--text-dim); font-size: 0.95rem; }
-        
-        /* Tech Stack */
+
+        /* ===== Voice Demo ===== */
+        .voice-demos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .voice-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+        .voice-card:hover {
+            border-color: var(--accent-pink);
+            transform: translateY(-2px);
+        }
+        .voice-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+        .voice-mood-orb {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .voice-card h4 { font-size: 1rem; }
+        .voice-card .voice-text {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        .play-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255,107,74,0.1);
+            border: 1px solid rgba(255,107,74,0.3);
+            border-radius: 8px;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            width: 100%;
+            justify-content: center;
+        }
+        .play-btn:hover {
+            background: rgba(255,107,74,0.2);
+            border-color: var(--primary);
+        }
+        .play-btn.playing {
+            background: rgba(255,107,74,0.3);
+            color: white;
+        }
+        .play-btn svg { width: 16px; height: 16px; fill: currentColor; stroke: none; }
+
+        /* Waveform */
+        .waveform {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 20px;
+            margin-left: 0.5rem;
+        }
+        .waveform-bar {
+            width: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+
+        /* ===== Mood System ===== */
+        .moods-row {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .mood-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .mood-item:hover { transform: scale(1.15); }
+        .mood-orb {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255,107,74,0.2);
+            transition: box-shadow 0.3s;
+        }
+        .mood-item:hover .mood-orb {
+            box-shadow: 0 0 30px rgba(255,107,74,0.4);
+        }
+        .mood-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        /* ===== Tech Stack ===== */
         .tech-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 1rem;
         }
-        
         .tech-item {
             background: var(--card);
             border: 1px solid var(--card-border);
             border-radius: 12px;
             padding: 1.5rem;
             text-align: center;
+            transition: all 0.3s;
         }
-        
-        .tech-item .tech-name {
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin-bottom: 0.3rem;
-        }
-        
-        .tech-item .tech-desc {
-            color: var(--text-dim);
-            font-size: 0.85rem;
-        }
-        
-        /* Install */
-        .install-section {
-            text-align: center;
-        }
-        
+        .tech-item:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
+        .tech-name { font-weight: 600; font-size: 1.1rem; margin-bottom: 0.3rem; }
+        .tech-desc { color: var(--text-dim); font-size: 0.85rem; }
+
+        /* ===== Install ===== */
+        .install-section { text-align: center; }
         .install-box {
             background: var(--card);
             border: 1px solid var(--card-border);
@@ -214,75 +469,41 @@
             max-width: 600px;
             margin: 0 auto 2rem;
         }
-        
         .install-box h3 { margin-bottom: 1rem; }
-        
         .code-block {
             background: #1a1a2e;
             border: 1px solid #2a2a4e;
             border-radius: 8px;
             padding: 1rem 1.5rem;
             font-family: 'Fira Code', 'SF Mono', monospace;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: #7dd3fc;
             text-align: left;
             overflow-x: auto;
             position: relative;
             cursor: pointer;
+            transition: border-color 0.3s;
         }
-        
-        .code-block:hover::after {
-            content: '📋 Click to copy';
-            position: absolute;
-            right: 8px;
-            top: 8px;
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            font-family: -apple-system, sans-serif;
-        }
-        
+        .code-block:hover { border-color: var(--accent-blue); }
         .code-block .comment { color: #6b7280; }
         .code-block .cmd { color: #34d399; }
-        
-        /* Moods */
-        .moods {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 2rem;
-        }
-        
-        .mood {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            position: relative;
-            transition: transform 0.3s;
-        }
-        
-        .mood:hover {
-            transform: scale(1.3);
-        }
-        
-        .mood::after {
-            content: attr(data-label);
+        .copy-hint {
             position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
+            right: 8px; top: 8px;
             font-size: 0.7rem;
             color: var(--text-dim);
-            white-space: nowrap;
+            font-family: -apple-system, sans-serif;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
-        
-        /* Docs */
+        .code-block:hover .copy-hint { opacity: 1; }
+
+        /* ===== Docs ===== */
         .docs-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
         }
-        
         .doc-card {
             background: var(--card);
             border: 1px solid var(--card-border);
@@ -291,190 +512,280 @@
             text-decoration: none;
             color: var(--text);
             transition: all 0.3s;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
         }
-        
-        .doc-card:hover {
-            border-color: var(--accent-blue);
-            transform: translateY(-2px);
-        }
-        
-        .doc-card h4 { margin-bottom: 0.5rem; }
+        .doc-card:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
+        .doc-icon { flex-shrink: 0; }
+        .doc-icon svg { width: 20px; height: 20px; stroke: var(--accent-blue); fill: none; stroke-width: 2; }
+        .doc-card h4 { margin-bottom: 0.3rem; font-size: 1rem; }
         .doc-card p { color: var(--text-dim); font-size: 0.85rem; }
-        
-        /* Footer */
+
+        /* ===== Footer ===== */
         footer {
             text-align: center;
             padding: 3rem 2rem;
             color: var(--text-dim);
             border-top: 1px solid var(--card-border);
         }
-        
         footer a { color: var(--primary); text-decoration: none; }
         footer a:hover { text-decoration: underline; }
-        
-        /* Scroll animations */
+
+        /* ===== Scroll Animations ===== */
         .fade-in {
             opacity: 0;
             transform: translateY(20px);
             transition: all 0.6s ease;
         }
-        
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        /* Lang switcher */
-        .lang-switch {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 100;
-            display: flex;
-            gap: 0.5rem;
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 0.3rem;
-        }
-        
-        .lang-btn {
-            padding: 0.3rem 0.8rem;
-            border: none;
-            background: transparent;
-            color: var(--text-dim);
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 0.85rem;
-        }
-        
-        .lang-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-        
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+        /* Language toggle */
         .zh { display: none; }
         body.zh-mode .zh { display: block; }
         body.zh-mode .en { display: none; }
         body.zh-mode .zh-inline { display: inline; }
         body.zh-mode .en-inline { display: none; }
         .zh-inline { display: none; }
-        
+
         @media (max-width: 768px) {
+            nav { padding: 0.5rem 1rem; }
+            .nav-links a { display: none; }
             .hero h1 { font-size: 2rem; }
             section { padding: 3rem 1.5rem; }
+            .features { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <!-- Language Switch -->
-    <div class="lang-switch">
-        <button class="lang-btn active" onclick="setLang('en')">EN</button>
-        <button class="lang-btn" onclick="setLang('zh')">中文</button>
-    </div>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="9" cy="10" r="1" fill="#FF6B4A" stroke="none"/>
+                <circle cx="15" cy="10" r="1" fill="#FF6B4A" stroke="none"/>
+                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+            </svg>
+            Claw
+        </div>
+        <div class="nav-links">
+            <a href="#features"><span class="en-inline">Features</span><span class="zh-inline">特性</span></a>
+            <a href="#voice"><span class="en-inline">Voice</span><span class="zh-inline">语音</span></a>
+            <a href="#install"><span class="en-inline">Install</span><span class="zh-inline">安装</span></a>
+            <div class="lang-switch">
+                <button class="lang-btn active" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" onclick="setLang('zh')">中文</button>
+            </div>
+        </div>
+    </nav>
 
     <!-- Hero -->
     <div class="hero">
-        <div class="hero-emoji">🦞</div>
+        <!-- Interactive Ball Demo -->
+        <div class="demo-ball-container" id="demoBall">
+            <div class="demo-ball" id="ball">
+                <div class="demo-eyes">
+                    <div class="demo-eye" id="eyeL"></div>
+                    <div class="demo-eye" id="eyeR"></div>
+                </div>
+            </div>
+            <div class="demo-particles" id="particles"></div>
+            <div class="demo-label">
+                <span class="en-inline">Click me!</span>
+                <span class="zh-inline">点我试试!</span>
+            </div>
+        </div>
+
         <h1>Claw Desktop Pet</h1>
         <p class="subtitle en">Give OpenClaw a body. A transparent desktop companion with emotional voice, expressive eyes, and air-feel UI.</p>
-        <p class="subtitle zh">给 OpenClaw 一个身体。透明桌面伴侣，拥有情感语音、丰富表情和空气感 UI。</p>
-        
+        <p class="subtitle zh">给 OpenClaw 一个身体。透明桌面伴侣，情感语音、丰富表情、空气��� UI。</p>
+
         <div class="hero-buttons">
             <a href="https://github.com/kk43994/claw-desktop-pet/releases" class="btn btn-primary">
-                ⬇️ <span class="en-inline">Download</span><span class="zh-inline">下载</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span class="en-inline">Download</span><span class="zh-inline">下载</span>
             </a>
             <a href="https://github.com/kk43994/claw-desktop-pet" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 GitHub
             </a>
             <a href="https://clawhub.ai/kk43994/desktop-pet" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                 ClawHub
             </a>
         </div>
-        
+
         <div class="preview">
-            <img src="images/v2-preview.jpg" alt="Claw Desktop Pet V2.0 Preview" onerror="this.style.display='none'">
+            <img src="images/v2-preview.jpg" alt="Claw Desktop Pet V2.0" onerror="this.style.display='none'">
         </div>
     </div>
 
     <!-- Features -->
-    <section class="fade-in">
+    <section id="features" class="fade-in">
         <h2 class="section-title">
-            <span class="en">✨ Features</span>
-            <span class="zh">✨ 核心特性</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span class="en">Features</span><span class="zh">核心特性</span>
         </h2>
+        <p class="section-subtitle">
+            <span class="en">Everything an AI desktop companion needs</span>
+            <span class="zh">AI 桌面伴侣所需的一切</span>
+        </p>
         <div class="features">
             <div class="feature-card">
-                <div class="feature-icon">🎨</div>
-                <h3 class="en">Air-Feel UI</h3>
-                <h3 class="zh">空气感 UI</h3>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+                </div>
+                <h3 class="en">Air-Feel UI</h3><h3 class="zh">空气感 UI</h3>
                 <p class="en">67px fluid glass ball with 7 mood-based color themes. No clunky windows — just a floating orb on your desktop.</p>
-                <p class="zh">67px 流体玻璃球，7 种情绪色系。没有笨重的窗口，只有一个浮动的小球。</p>
+                <p class="zh">67px 流体玻璃球，7 种情绪色系。没有笨重窗口，只有一个漂浮的光球。</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">👀</div>
-                <h3 class="en">Expressive Eyes</h3>
-                <h3 class="zh">丰富表情</h3>
-                <p class="en">15+ eye expressions with idle micro-animations. Capsule-shaped eyes inspired by AIBI robot — blink, look around, react.</p>
-                <p class="zh">15+ 种眼睛表情和待机微表情。胶囊形眼睛灵感来自 AIBI 机器人 —— 眨眼、环顾、反应。</p>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <h3 class="en">Expressive Eyes</h3><h3 class="zh">丰富表情</h3>
+                <p class="en">15+ eye expressions with idle micro-animations. Capsule eyes blink, look around, and react to your actions.</p>
+                <p class="zh">15+ 种眼睛表情和待机微表情。胶囊眼睛会眨眼、环顾、对你的操作做出反应。</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🔊</div>
-                <h3 class="en">Emotional TTS</h3>
-                <h3 class="zh">情感语音</h3>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </div>
+                <h3 class="en">Emotional TTS</h3><h3 class="zh">情感语音</h3>
                 <p class="en">MiniMax Speech 2.5 with voice cloning + 7 emotion modes. Your AI speaks with real feeling.</p>
                 <p class="zh">MiniMax Speech 2.5 语音克隆 + 7 种情绪模式。你的 AI 真的会带着感情说话。</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🎵</div>
-                <h3 class="en">Desktop Lyrics</h3>
-                <h3 class="zh">桌面歌词</h3>
-                <p class="en">Agent responses float like desktop lyrics — typewriter effect, auto-fade, fully mouse-transparent.</p>
-                <p class="zh">AI 回复像桌面歌词一样浮现 —— 打字机效果、自动淡出、完全鼠标穿透。</p>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                </div>
+                <h3 class="en">Desktop Lyrics</h3><h3 class="zh">桌面歌词</h3>
+                <p class="en">Agent responses float like desktop lyrics — typewriter effect, auto-fade, fully click-through.</p>
+                <p class="zh">AI 回复像桌面歌词一样浮现 — 打字机效果、自动淡出、完全鼠标穿透。</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🏗️</div>
-                <h3 class="en">Dual Windows</h3>
-                <h3 class="zh">双窗口架构</h3>
-                <p class="en">Sprite window (draggable, interactive) + Lyrics window (click-through). Both transparent, always-on-top.</p>
-                <p class="zh">精灵窗口（可拖动）+ 歌词窗口（鼠标穿透）。双透明，双置顶。</p>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <h3 class="en">Dual Windows</h3><h3 class="zh">双窗口架构</h3>
+                <p class="en">Sprite window (draggable) + Lyrics window (click-through). Both transparent, always-on-top.</p>
+                <p class="zh">精灵窗口（可拖动）+ 歌词窗口（鼠标穿透）。双透明、双置顶。</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">💡</div>
-                <h3 class="en">Pure CSS/JS</h3>
-                <h3 class="zh">纯代码动画</h3>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </div>
+                <h3 class="en">Pure Code Animation</h3><h3 class="zh">纯代码动画</h3>
                 <p class="en">All animations procedurally generated. Zero sprite sheets, zero image assets. Everything is code.</p>
                 <p class="zh">所有动画程序化生成。零精灵图、零图片资源。一切都是代码。</p>
             </div>
         </div>
     </section>
 
-    <!-- Mood Colors -->
+    <!-- Voice Demo -->
+    <section id="voice" class="fade-in">
+        <h2 class="section-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <span class="en">Voice Demos</span><span class="zh">语音示例</span>
+        </h2>
+        <p class="section-subtitle">
+            <span class="en">Hear the emotional TTS in action — same cloned voice, different moods</span>
+            <span class="zh">听听情感语音效果 — 同一个克隆音色，不同情绪</span>
+        </p>
+        <div class="voice-demos">
+            <div class="voice-card">
+                <div class="voice-card-header">
+                    <div class="voice-mood-orb" style="background:radial-gradient(circle,#FFD700,#FFA500);box-shadow:0 0 15px rgba(255,215,0,0.3)"></div>
+                    <div>
+                        <h4 class="en">Happy</h4><h4 class="zh">开心</h4>
+                    </div>
+                </div>
+                <p class="voice-text">"嗨KK！今天天气真好呀，我们一起加油吧！"</p>
+                <button class="play-btn" onclick="playDemo(this, 'audio/demo-happy.mp3')">
+                    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <span class="en-inline">Play</span><span class="zh-inline">播放</span>
+                    <div class="waveform" style="display:none"></div>
+                </button>
+            </div>
+            <div class="voice-card">
+                <div class="voice-card-header">
+                    <div class="voice-mood-orb" style="background:radial-gradient(circle,#87CEEB,#4682B4);box-shadow:0 0 15px rgba(70,130,180,0.3)"></div>
+                    <div>
+                        <h4 class="en">Calm</h4><h4 class="zh">平静</h4>
+                    </div>
+                </div>
+                <p class="voice-text">"晚安KK，今天辛苦了，明天继续努力哦。"</p>
+                <button class="play-btn" onclick="playDemo(this, 'audio/demo-calm.mp3')">
+                    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <span class="en-inline">Play</span><span class="zh-inline">播放</span>
+                    <div class="waveform" style="display:none"></div>
+                </button>
+            </div>
+            <div class="voice-card">
+                <div class="voice-card-header">
+                    <div class="voice-mood-orb" style="background:radial-gradient(circle,#FFD700,#FF6347);box-shadow:0 0 15px rgba(255,99,71,0.3)"></div>
+                    <div>
+                        <h4 class="en">Surprised</h4><h4 class="zh">惊喜</h4>
+                    </div>
+                </div>
+                <p class="voice-text">"哇！这个功能也太酷了吧！我好喜欢！"</p>
+                <button class="play-btn" onclick="playDemo(this, 'audio/demo-surprised.mp3')">
+                    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <span class="en-inline">Play</span><span class="zh-inline">播放</span>
+                    <div class="waveform" style="display:none"></div>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mood System -->
     <section class="fade-in">
         <h2 class="section-title">
-            <span class="en">🎭 Mood System</span>
-            <span class="zh">🎭 情绪系统</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <span class="en">Mood System</span><span class="zh">情绪系统</span>
         </h2>
-        <p style="text-align:center;color:var(--text-dim);margin-bottom:1rem">
-            <span class="en">The ball changes color based on the AI's mood</span>
-            <span class="zh">球体根据 AI 的情绪变化颜色</span>
+        <p class="section-subtitle">
+            <span class="en">Click a mood to see the ball transform</span>
+            <span class="zh">点击情绪查看球体变化</span>
         </p>
-        <div class="moods">
-            <div class="mood" style="background:radial-gradient(circle,#FF6B4A,#FF4500)" data-label="idle"></div>
-            <div class="mood" style="background:radial-gradient(circle,#FFD700,#FFA500)" data-label="happy"></div>
-            <div class="mood" style="background:radial-gradient(circle,#FF69B4,#FF1493)" data-label="talking"></div>
-            <div class="mood" style="background:radial-gradient(circle,#7B68EE,#4B0082)" data-label="thinking"></div>
-            <div class="mood" style="background:radial-gradient(circle,#DDA0DD,#C0C0C0)" data-label="sleepy"></div>
-            <div class="mood" style="background:radial-gradient(circle,#FFD700,#FF6347)" data-label="surprised"></div>
-            <div class="mood" style="background:radial-gradient(circle,#b0b0b0,#808080)" data-label="offline"></div>
+        <div class="moods-row">
+            <div class="mood-item" onclick="setDemoMood('idle','#FF6B4A','#FF4500')">
+                <div class="mood-orb" style="background:radial-gradient(circle,#FF6B4A,#FF4500)"></div>
+                <span class="mood-label">Idle</span>
+            </div>
+            <div class="mood-item" onclick="setDemoMood('happy','#FFD700','#FFA500')">
+                <div class="mood-orb" style="background:radial-gradient(circle,#FFD700,#FFA500)"></div>
+                <span class="mood-label">Happy</span>
+            </div>
+            <div class="mood-item" onclick="setDemoMood('talking','#FF69B4','#FF1493')">
+                <div class="mood-orb" style="background:radial-gradient(circle,#FF69B4,#FF1493)"></div>
+                <span class="mood-label">Talking</span>
+            </div>
+            <div class="mood-item" onclick="setDemoMood('thinking','#7B68EE','#4B0082')">
+                <div class="mood-orb" style="background:radial-gradient(circle,#7B68EE,#4B0082)"></div>
+                <span class="mood-label">Thinking</span>
+            </div>
+            <div class="mood-item" onclick="setDemoMood('sleepy','#DDA0DD','#C0C0C0')">
+                <div class="mood-orb" style="background:radial-gradient(circle,#DDA0DD,#C0C0C0)"></div>
+                <span class="mood-label">Sleepy</span>
+            </div>
+            <div class="mood-item" onclick="setDemoMood('surprised','#FFD700','#FF6347')">
+                <div class="mood-orb" style="background:radial-gradient(circle,#FFD700,#FF6347)"></div>
+                <span class="mood-label">Surprised</span>
+            </div>
+            <div class="mood-item" onclick="setDemoMood('offline','#b0b0b0','#808080')">
+                <div class="mood-orb" style="background:radial-gradient(circle,#b0b0b0,#808080)"></div>
+                <span class="mood-label">Offline</span>
+            </div>
         </div>
     </section>
 
     <!-- Tech Stack -->
     <section class="fade-in">
         <h2 class="section-title">
-            <span class="en">🛠️ Tech Stack</span>
-            <span class="zh">🛠️ 技术栈</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            <span class="en">Tech Stack</span><span class="zh">技术栈</span>
         </h2>
         <div class="tech-grid">
             <div class="tech-item">
@@ -493,7 +804,7 @@
                 <div class="tech-desc zh">情感 TTS + 声音克隆</div>
             </div>
             <div class="tech-item">
-                <div class="tech-name">CSS/JS</div>
+                <div class="tech-name">CSS / JS</div>
                 <div class="tech-desc en">Pure code animations</div>
                 <div class="tech-desc zh">纯代码动画</div>
             </div>
@@ -501,24 +812,24 @@
     </section>
 
     <!-- Install -->
-    <section class="install-section fade-in">
+    <section id="install" class="install-section fade-in">
         <h2 class="section-title">
-            <span class="en">🚀 Get Started</span>
-            <span class="zh">🚀 快速开始</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span class="en">Get Started</span><span class="zh">快速开始</span>
         </h2>
-        
+
         <div class="install-box">
-            <h3 class="en">Install via ClawHub</h3>
-            <h3 class="zh">通过 ClawHub 安装</h3>
-            <div class="code-block" onclick="navigator.clipboard.writeText('npx clawhub@latest install kk43994/desktop-pet')">
+            <h3 class="en">Install via ClawHub</h3><h3 class="zh">通过 ClawHub 安装</h3>
+            <div class="code-block" onclick="copyCode(this, 'npx clawhub@latest install kk43994/desktop-pet')">
+                <span class="copy-hint">Click to copy</span>
                 <span class="cmd">npx clawhub@latest install kk43994/desktop-pet</span>
             </div>
         </div>
-        
+
         <div class="install-box">
-            <h3 class="en">Or clone from GitHub</h3>
-            <h3 class="zh">或从 GitHub 克隆</h3>
-            <div class="code-block" onclick="navigator.clipboard.writeText('git clone https://github.com/kk43994/claw-desktop-pet.git\ncd claw-desktop-pet\nnpm install\nnpm start')">
+            <h3 class="en">Or clone from GitHub</h3><h3 class="zh">或从 GitHub 克隆</h3>
+            <div class="code-block" onclick="copyCode(this, 'git clone https://github.com/kk43994/claw-desktop-pet.git\ncd claw-desktop-pet\nnpm install\nnpm start')">
+                <span class="copy-hint">Click to copy</span>
                 <span class="comment"># Clone and run</span><br>
                 <span class="cmd">git clone</span> https://github.com/kk43994/claw-desktop-pet.git<br>
                 <span class="cmd">cd</span> claw-desktop-pet<br>
@@ -531,29 +842,25 @@
     <!-- Docs -->
     <section class="fade-in">
         <h2 class="section-title">
-            <span class="en">📚 Documentation</span>
-            <span class="zh">📚 文档</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span class="en">Documentation</span><span class="zh">文档</span>
         </h2>
         <div class="docs-grid">
             <a href="https://github.com/kk43994/claw-desktop-pet#readme" class="doc-card">
-                <h4>📖 README</h4>
-                <p class="en">Full project overview and setup guide</p>
-                <p class="zh">完整项目介绍和安装指南</p>
+                <div class="doc-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                <div><h4>README</h4><p class="en">Full project overview</p><p class="zh">完整项目介绍</p></div>
             </a>
             <a href="https://github.com/kk43994/claw-desktop-pet/issues" class="doc-card">
-                <h4>🐛 Issues</h4>
-                <p class="en">Report bugs or request features</p>
-                <p class="zh">报告问题或请求新功能</p>
+                <div class="doc-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                <div><h4>Issues</h4><p class="en">Report bugs or request features</p><p class="zh">报告问题或请求新功能</p></div>
             </a>
             <a href="https://clawhub.ai/kk43994/desktop-pet" class="doc-card">
-                <h4>📦 ClawHub</h4>
-                <p class="en">Skill page with install instructions</p>
-                <p class="zh">技能页面和安装说明</p>
+                <div class="doc-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+                <div><h4>ClawHub</h4><p class="en">Skill page</p><p class="zh">技能页面</p></div>
             </a>
             <a href="https://github.com/kk43994/claw-desktop-pet/releases" class="doc-card">
-                <h4>📋 Releases</h4>
-                <p class="en">Download latest version</p>
-                <p class="zh">下载最新版本</p>
+                <div class="doc-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+                <div><h4>Releases</h4><p class="en">Download latest</p><p class="zh">下载最新版本</p></div>
             </a>
         </div>
     </section>
@@ -561,37 +868,184 @@
     <!-- Footer -->
     <footer>
         <p>
-            <span class="en">Made with ❤️ by <a href="https://github.com/kk43994">KK</a> · Powered by <a href="https://openclaw.ai">OpenClaw</a></span>
-            <span class="zh">由 <a href="https://github.com/kk43994">KK</a> 用 ❤️ 制作 · 基于 <a href="https://openclaw.ai">OpenClaw</a></span>
+            <span class="en">Made with care by <a href="https://github.com/kk43994">KK</a> · Powered by <a href="https://openclaw.ai">OpenClaw</a></span>
+            <span class="zh">由 <a href="https://github.com/kk43994">KK</a> 精心打造 · 基于 <a href="https://openclaw.ai">OpenClaw</a></span>
         </p>
         <p style="margin-top:0.5rem;font-size:0.85rem">
-            <a href="https://github.com/kk43994/claw-desktop-pet">GitHub</a> · 
+            <a href="https://github.com/kk43994/claw-desktop-pet">GitHub</a> ·
             <a href="https://clawhub.ai/kk43994/desktop-pet">ClawHub</a>
         </p>
     </footer>
 
     <script>
-        // Language switching
+        // ===== Language =====
         function setLang(lang) {
             document.body.classList.toggle('zh-mode', lang === 'zh');
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
             localStorage.setItem('lang', lang);
         }
-        
-        // Restore language
         if (localStorage.getItem('lang') === 'zh') {
             document.body.classList.add('zh-mode');
-            document.querySelectorAll('.lang-btn')[1].classList.add('active');
-            document.querySelectorAll('.lang-btn')[0].classList.remove('active');
+            document.querySelectorAll('.lang-btn')[1]?.classList.add('active');
+            document.querySelectorAll('.lang-btn')[0]?.classList.remove('active');
+            document.querySelectorAll('.lang-btn')[3]?.classList.add('active');
+            document.querySelectorAll('.lang-btn')[2]?.classList.remove('active');
         }
-        
-        // Scroll animations
+
+        // ===== Scroll Animations =====
         const observer = new IntersectionObserver(entries => {
             entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
         }, { threshold: 0.1 });
-        
         document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        // ===== Interactive Ball =====
+        const ball = document.getElementById('ball');
+        const eyeL = document.getElementById('eyeL');
+        const eyeR = document.getElementById('eyeR');
+        const demoBall = document.getElementById('demoBall');
+
+        // Mouse tracking for eyes
+        document.addEventListener('mousemove', e => {
+            const rect = ball.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const dx = (e.clientX - cx) / window.innerWidth * 3;
+            const dy = (e.clientY - cy) / window.innerHeight * 3;
+            eyeL.style.transform = `translate(${dx}px, ${dy}px)`;
+            eyeR.style.transform = `translate(${dx}px, ${dy}px)`;
+        });
+
+        // Blink
+        function doBlink() {
+            eyeL.classList.add('blink');
+            eyeR.classList.add('blink');
+            setTimeout(() => {
+                eyeL.classList.remove('blink');
+                eyeR.classList.remove('blink');
+            }, 120);
+            setTimeout(doBlink, 2000 + Math.random() * 4000);
+        }
+        setTimeout(doBlink, 2000);
+
+        // Click to squish + particles
+        demoBall.addEventListener('click', () => {
+            ball.classList.remove('squish');
+            void ball.offsetWidth;
+            ball.classList.add('squish');
+            setTimeout(() => ball.classList.remove('squish'), 400);
+            spawnParticles();
+        });
+
+        function spawnParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('div');
+                p.className = 'demo-particle';
+                p.style.left = '55px';
+                p.style.top = '55px';
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 40 + Math.random() * 40;
+                const tx = Math.cos(angle) * dist;
+                const ty = Math.sin(angle) * dist;
+                p.style.background = ['#FF6B4A','#FFD700','#FF69B4','#7B68EE'][Math.floor(Math.random()*4)];
+                container.appendChild(p);
+                p.animate([
+                    { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                    { transform: `translate(${tx}px,${ty}px) scale(0)`, opacity: 0 }
+                ], { duration: 600 + Math.random() * 300, easing: 'ease-out' });
+                setTimeout(() => p.remove(), 1000);
+            }
+        }
+
+        // Mood switcher for demo ball
+        function setDemoMood(mood, c1, c2) {
+            ball.style.background = `radial-gradient(circle at 35% 35%, ${c1}, ${c2} 80%)`;
+            ball.style.boxShadow = `0 0 40px ${c1}66, 0 0 80px ${c1}22, inset 0 -8px 20px rgba(0,0,0,0.2), inset 0 8px 20px rgba(255,255,255,0.15)`;
+            ball.classList.remove('squish');
+            void ball.offsetWidth;
+            ball.classList.add('squish');
+            setTimeout(() => ball.classList.remove('squish'), 400);
+
+            if (mood === 'sleepy') {
+                eyeL.style.height = '4px';
+                eyeR.style.height = '4px';
+            } else if (mood === 'surprised') {
+                eyeL.style.height = '18px'; eyeL.style.width = '10px';
+                eyeR.style.height = '18px'; eyeR.style.width = '10px';
+                setTimeout(() => { eyeL.style.height = '14px'; eyeL.style.width = '8px'; eyeR.style.height = '14px'; eyeR.style.width = '8px'; }, 800);
+            } else {
+                eyeL.style.height = '14px'; eyeL.style.width = '8px';
+                eyeR.style.height = '14px'; eyeR.style.width = '8px';
+            }
+        }
+
+        // ===== Voice Playback =====
+        let currentAudio = null;
+        let currentBtn = null;
+
+        function playDemo(btn, src) {
+            // Stop current
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                if (currentBtn) {
+                    currentBtn.classList.remove('playing');
+                    currentBtn.querySelector('.waveform').style.display = 'none';
+                    currentBtn.querySelector('svg').style.display = '';
+                }
+            }
+
+            if (currentBtn === btn && currentAudio && !currentAudio.ended) {
+                currentAudio = null;
+                currentBtn = null;
+                return;
+            }
+
+            const audio = new Audio(src);
+            currentAudio = audio;
+            currentBtn = btn;
+
+            btn.classList.add('playing');
+            btn.querySelector('svg').style.display = 'none';
+            const wave = btn.querySelector('.waveform');
+            wave.style.display = 'flex';
+            wave.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'waveform-bar';
+                bar.style.height = '4px';
+                bar.style.animation = `waveAnim 0.5s ease-in-out ${i * 0.1}s infinite alternate`;
+                wave.appendChild(bar);
+            }
+
+            audio.play();
+            audio.onended = () => {
+                btn.classList.remove('playing');
+                wave.style.display = 'none';
+                btn.querySelector('svg').style.display = '';
+                currentAudio = null;
+                currentBtn = null;
+            };
+        }
+
+        // ===== Copy Code =====
+        function copyCode(el, text) {
+            navigator.clipboard.writeText(text);
+            const hint = el.querySelector('.copy-hint');
+            if (hint) {
+                hint.textContent = 'Copied!';
+                hint.style.opacity = '1';
+                setTimeout(() => { hint.textContent = 'Click to copy'; hint.style.opacity = ''; }, 1500);
+            }
+        }
     </script>
+
+    <style>
+        @keyframes waveAnim {
+            from { height: 4px; }
+            to { height: 16px; }
+        }
+    </style>
 </body>
 </html>
