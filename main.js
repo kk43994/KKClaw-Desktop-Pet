@@ -619,10 +619,15 @@ async function createWindow() {
         ...modelSwitcher.getTrayMenuItems(),
         { type: 'separator' },
         {
+          label: '⚙️ 模型管理面板',
+          click: () => {
+            openModelSettings();
+          }
+        },
+        {
           label: '🔃 刷新模型列表',
           click: () => {
             modelSwitcher.reload();
-            // 重建托盘菜单以更新
             rebuildTrayMenu();
             showServiceNotification('模型列表已刷新', `共 ${modelSwitcher.getModels().length} 个模型`);
           }
@@ -743,13 +748,38 @@ async function createWindow() {
  */
 function rebuildTrayMenu() {
   if (!tray || !modelSwitcher) return;
-  
-  // 重新创建菜单需要重新调用 createWindow 中的菜单构建逻辑
-  // 为了简化，我们只更新 tooltip 来反映当前模型
   tray.setToolTip(`Claw 🦞 | ${modelSwitcher.getStatusText()}`);
+}
+
+/**
+ * 打开模型管理设置窗口
+ */
+let modelSettingsWindow = null;
+function openModelSettings() {
+  if (modelSettingsWindow && !modelSettingsWindow.isDestroyed()) {
+    modelSettingsWindow.focus();
+    return;
+  }
   
-  // 注意：Electron的Menu一旦设置无法动态更新单项
-  // 完整刷新需要重建整个菜单，但这里简化处理
+  modelSettingsWindow = new BrowserWindow({
+    width: 520,
+    height: 640,
+    title: '模型管理',
+    resizable: true,
+    minimizable: true,
+    maximizable: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  
+  modelSettingsWindow.loadFile('model-settings.html');
+  
+  modelSettingsWindow.on('closed', () => {
+    modelSettingsWindow = null;
+  });
 }
 
 // 屏幕边界约束 — 防止球体跑到屏幕外
@@ -1079,6 +1109,79 @@ ipcMain.handle('model-next', async () => {
 ipcMain.handle('model-prev', async () => {
   if (!modelSwitcher) return null;
   return await modelSwitcher.prev();
+});
+
+// 🔄 Provider 管理 IPC
+ipcMain.handle('model-full-status', async () => {
+  return modelSwitcher ? modelSwitcher.getFullStatus() : null;
+});
+
+ipcMain.handle('model-providers', async () => {
+  return modelSwitcher ? modelSwitcher.getProviders() : [];
+});
+
+ipcMain.handle('model-presets', async () => {
+  return modelSwitcher ? modelSwitcher.getPresets() : [];
+});
+
+ipcMain.handle('model-add-provider', async (event, name, opts) => {
+  if (!modelSwitcher) return { error: 'not initialized' };
+  try {
+    const result = modelSwitcher.addProvider(name, opts);
+    return { success: true, provider: result };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('model-add-from-preset', async (event, presetKey, apiKey, customName, customBaseUrl) => {
+  if (!modelSwitcher) return { error: 'not initialized' };
+  try {
+    const result = modelSwitcher.addFromPreset(presetKey, apiKey, customName, customBaseUrl);
+    return { success: true, provider: result };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('model-update-provider', async (event, name, updates) => {
+  if (!modelSwitcher) return { error: 'not initialized' };
+  try {
+    const result = modelSwitcher.updateProvider(name, updates);
+    return { success: true, provider: result };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('model-remove-provider', async (event, name) => {
+  if (!modelSwitcher) return { error: 'not initialized' };
+  try {
+    modelSwitcher.removeProvider(name);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('model-add-model', async (event, providerName, model) => {
+  if (!modelSwitcher) return { error: 'not initialized' };
+  try {
+    modelSwitcher.addModel(providerName, model);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('model-remove-model', async (event, providerName, modelId) => {
+  if (!modelSwitcher) return { error: 'not initialized' };
+  try {
+    modelSwitcher.removeModel(providerName, modelId);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 // 🆘 刷新 Session - 清理损坏会话
