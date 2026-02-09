@@ -1174,6 +1174,17 @@ ipcMain.handle('model-add-model', async (event, providerName, model) => {
   }
 });
 
+// 🔄 测速 IPC
+ipcMain.handle('model-speed-test', async (event, providerName) => {
+  if (!modelSwitcher) return { latencyMs: -1, status: 'error', error: 'not initialized' };
+  return await modelSwitcher.speedTest(providerName);
+});
+
+ipcMain.handle('model-speed-test-all', async () => {
+  if (!modelSwitcher) return {};
+  return await modelSwitcher.speedTestAll();
+});
+
 ipcMain.handle('model-remove-model', async (event, providerName, modelId) => {
   if (!modelSwitcher) return { error: 'not initialized' };
   try {

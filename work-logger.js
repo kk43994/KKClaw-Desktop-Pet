@@ -126,6 +126,38 @@ class WorkLogger {
     getSessionLog() {
         return this.sessionLog;
     }
+
+    /**
+     * 获取最近的消息记录（用于三击历史查看）
+     * @param {number} count - 返回的消息数量
+     * @returns {Array} 最近的消息列表
+     */
+    getRecentMessages(count = 10) {
+        // 从sessionLog中筛选message类型的日志
+        const messages = this.sessionLog
+            .filter(entry => entry.type === 'message')
+            .slice(-count)
+            .map(entry => {
+                // 解析 "**sender**: content" 格式
+                const match = entry.content.match(/^\*\*(.+?)\*\*:\s*(.+)$/s);
+                if (match) {
+                    return {
+                        timestamp: entry.timestamp,
+                        sender: match[1],
+                        content: match[2].substring(0, 100), // 截取前100字符
+                        type: entry.type,
+                    };
+                }
+                return {
+                    timestamp: entry.timestamp,
+                    sender: '',
+                    content: entry.content.substring(0, 100),
+                    type: entry.type,
+                };
+            });
+        
+        return messages;
+    }
 }
 
 module.exports = WorkLogger;

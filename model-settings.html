@@ -2,205 +2,379 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>模型管理</title>
+<title>模型管理 — CC Switch Style</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { 
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #1a1a2e; color: #e0e0e0; padding: 20px;
-  user-select: none; overflow-y: auto;
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+  background: #0f0f17; color: #e0e0e0;
+  user-select: none; overflow-y: auto; overflow-x: hidden;
 }
 
-h2 { font-size: 18px; margin-bottom: 16px; color: #fff; }
-h3 { font-size: 14px; margin: 12px 0 8px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+/* 隐藏滚动条 */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ffffff20; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #ffffff40; }
 
-/* ===== 当前模型指示器 ===== */
-.current-model {
-  background: linear-gradient(135deg, #16213e, #0f3460);
-  border-radius: 12px; padding: 16px; margin-bottom: 20px;
+/* ===== 顶部标题栏 ===== */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px; position: sticky; top: 0; z-index: 10;
+  background: #0f0f17ee; backdrop-filter: blur(12px);
+  border-bottom: 1px solid #ffffff08;
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-title {
+  font-size: 20px; font-weight: 700; 
+  background: linear-gradient(135deg, #7C6BF0, #4ECDC4);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header-gear { font-size: 16px; color: #666; cursor: pointer; }
+.header-right { display: flex; gap: 6px; }
+.header-tab {
+  padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  cursor: pointer; color: #888; transition: all 0.2s; border: 1px solid transparent;
+}
+.header-tab:hover { color: #ccc; background: #ffffff0a; }
+.header-tab.active { color: #fff; background: #7C6BF020; border-color: #7C6BF040; }
+.header-add {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: linear-gradient(135deg, #7C6BF0, #6B5CE0); color: #fff;
+  font-size: 20px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s; margin-left: 4px;
+}
+.header-add:hover { transform: scale(1.1); box-shadow: 0 4px 12px #7C6BF040; }
+
+/* ===== Provider 卡片列表 ===== */
+.provider-list { padding: 12px 16px; }
+
+.provider-card {
+  background: #16182a; border-radius: 14px; padding: 16px 18px;
+  margin-bottom: 10px; border: 1px solid #ffffff08;
   display: flex; align-items: center; gap: 14px;
-  border: 1px solid #ffffff15;
+  cursor: pointer; transition: all 0.2s; position: relative;
 }
-.current-badge {
-  width: 42px; height: 42px; border-radius: 10px;
+.provider-card:hover { border-color: #ffffff18; background: #1a1d32; }
+.provider-card.current { border-color: #4ECDC440; background: #0f2a28; }
+
+/* 拖拽手柄 */
+.drag-handle {
+  display: flex; flex-direction: column; gap: 2px; cursor: grab; opacity: 0.3;
+  padding: 4px; transition: opacity 0.2s;
+}
+.drag-handle:hover { opacity: 0.7; }
+.drag-dot {
+  display: flex; gap: 2px;
+}
+.drag-dot span {
+  width: 3px; height: 3px; border-radius: 50%; background: #888;
+}
+
+/* Provider 图标 */
+.provider-icon {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 18px; color: #fff;
+  background: #333; position: relative;
+}
+
+/* Provider 信息 */
+.provider-info { flex: 1; min-width: 0; }
+.provider-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.provider-name { font-size: 15px; font-weight: 600; color: #fff; }
+.provider-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600;
+  background: #4ECDC420; color: #4ECDC4; white-space: nowrap;
+}
+.provider-url {
+  font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 260px;
+}
+
+/* Provider 右侧信息 */
+.provider-right { text-align: right; flex-shrink: 0; }
+.provider-speed {
+  font-size: 12px; color: #888; margin-bottom: 2px;
+}
+.provider-speed.fast { color: #4ECDC4; }
+.provider-speed.medium { color: #E8A838; }
+.provider-speed.slow { color: #e74c3c; }
+.provider-models-count { font-size: 11px; color: #555; }
+.provider-actions-row {
+  display: flex; gap: 4px; margin-top: 4px; justify-content: flex-end;
+}
+
+/* ===== 当前模型指示器（主页顶部） ===== */
+.current-indicator {
+  margin: 0 16px 12px; padding: 14px 18px;
+  background: linear-gradient(135deg, #16182a, #1a1d32);
+  border-radius: 14px; border: 1px solid #7C6BF020;
+  display: flex; align-items: center; gap: 14px;
+}
+.current-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 18px; color: #fff;
+}
+.current-info { flex: 1; }
+.current-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+.current-model-name { font-size: 17px; font-weight: 700; color: #fff; margin-top: 2px; }
+.current-provider-name { font-size: 12px; color: #666; margin-top: 1px; }
+.current-switch-btn {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid #7C6BF040;
+  background: #7C6BF015; color: #7C6BF0; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+}
+.current-switch-btn:hover { background: #7C6BF030; }
+
+/* ===== 模型选择面板 ===== */
+.model-panel { padding: 0 16px 16px; }
+.model-section-title {
+  font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1.5px;
+  padding: 8px 0 6px; font-weight: 600;
+}
+.model-grid { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.model-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-radius: 8px; cursor: pointer; transition: all 0.15s;
+}
+.model-row:hover { background: #ffffff08; }
+.model-row.active { background: #7C6BF015; }
+.model-icon-sm {
+  width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 11px; color: #fff;
+}
+.model-name-text { font-size: 13px; flex: 1; color: #ddd; }
+.model-tags { display: flex; gap: 4px; align-items: center; }
+.model-tag {
+  font-size: 10px; padding: 1px 6px; border-radius: 3px;
+  background: #ffffff08; color: #888;
+}
+.model-tag.reasoning { background: #E8A83820; color: #E8A838; }
+.model-check-mark { font-size: 14px; color: #7C6BF0; width: 20px; text-align: center; }
+
+/* ===== 添加 Provider 面板 ===== */
+.add-panel { padding: 12px 16px; }
+.preset-section-title { font-size: 13px; font-weight: 600; color: #aaa; margin-bottom: 10px; }
+.preset-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;
+}
+.preset-card {
+  background: #16182a; border-radius: 10px; padding: 12px 10px;
+  text-align: center; cursor: pointer; border: 1px solid #ffffff08;
+  transition: all 0.2s; position: relative;
+}
+.preset-card:hover { border-color: #ffffff20; background: #1a1d32; transform: translateY(-1px); }
+.preset-card.selected { border-color: #7C6BF0; background: #7C6BF010; }
+.preset-card-icon {
+  width: 36px; height: 36px; border-radius: 8px; margin: 0 auto 6px;
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 16px; color: #fff;
 }
-.current-info { flex: 1; }
-.current-name { font-size: 16px; font-weight: 600; }
-.current-provider { font-size: 12px; color: #888; margin-top: 2px; }
-
-/* ===== 模型列表 ===== */
-.model-grid { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
-.model-item {
-  background: #16213e; border-radius: 8px; padding: 10px 14px;
-  display: flex; align-items: center; gap: 10px; cursor: pointer;
-  border: 1px solid transparent; transition: all 0.15s;
+.preset-card-name { font-size: 12px; font-weight: 600; color: #ddd; }
+.preset-card-desc { font-size: 10px; color: #666; margin-top: 2px; }
+.preset-card-count {
+  position: absolute; top: 6px; right: 6px;
+  font-size: 9px; background: #ffffff10; padding: 1px 5px;
+  border-radius: 3px; color: #888;
 }
-.model-item:hover { border-color: #ffffff30; background: #1a2744; }
-.model-item.active { border-color: #7C6BF0; background: #1a2744; }
-.model-icon {
-  width: 32px; height: 32px; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 12px; color: #fff; flex-shrink: 0;
-}
-.model-name { font-size: 13px; font-weight: 500; flex: 1; }
-.model-meta { font-size: 11px; color: #666; }
-.model-check { font-size: 16px; }
-
-/* ===== Provider 管理 ===== */
-.provider-card {
-  background: #16213e; border-radius: 10px; padding: 14px;
-  margin-bottom: 10px; border: 1px solid #ffffff10;
-}
-.provider-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px;
-}
-.provider-name { font-weight: 600; font-size: 14px; }
-.provider-url { font-size: 11px; color: #666; word-break: break-all; }
-.provider-models { font-size: 12px; color: #888; margin-top: 4px; }
-.provider-actions { display: flex; gap: 6px; }
-
-/* ===== 按钮 ===== */
-.btn {
-  padding: 6px 14px; border-radius: 6px; border: none;
-  font-size: 12px; cursor: pointer; font-weight: 500; transition: all 0.15s;
-}
-.btn-primary { background: #7C6BF0; color: #fff; }
-.btn-primary:hover { background: #6B5CE0; }
-.btn-danger { background: #e74c3c22; color: #e74c3c; border: 1px solid #e74c3c44; }
-.btn-danger:hover { background: #e74c3c44; }
-.btn-ghost { background: transparent; color: #888; border: 1px solid #ffffff20; }
-.btn-ghost:hover { background: #ffffff10; color: #ccc; }
-.btn-sm { padding: 4px 10px; font-size: 11px; }
 
 /* ===== 表单 ===== */
+.form-section { margin-top: 16px; }
 .form-group { margin-bottom: 12px; }
-.form-label { font-size: 12px; color: #999; margin-bottom: 4px; display: block; }
+.form-label { font-size: 12px; color: #888; margin-bottom: 4px; display: block; font-weight: 500; }
 .form-input {
-  width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffffff20;
-  background: #0f1729; color: #e0e0e0; font-size: 13px; outline: none;
+  width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #ffffff15;
+  background: #0d0d14; color: #e0e0e0; font-size: 13px; outline: none;
+  transition: border-color 0.2s;
 }
 .form-input:focus { border-color: #7C6BF0; }
-.form-input::placeholder { color: #555; }
+.form-input::placeholder { color: #444; }
 .form-select {
-  width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffffff20;
-  background: #0f1729; color: #e0e0e0; font-size: 13px; outline: none;
-  cursor: pointer;
+  width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #ffffff15;
+  background: #0d0d14; color: #e0e0e0; font-size: 13px; outline: none; cursor: pointer;
 }
 .form-row { display: flex; gap: 10px; }
 .form-row > * { flex: 1; }
+.form-hint { font-size: 11px; color: #555; margin-top: 4px; }
 
-/* ===== 预设选择 ===== */
-.preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-.preset-item {
-  background: #0f1729; border-radius: 8px; padding: 10px; text-align: center;
-  cursor: pointer; border: 1px solid #ffffff15; transition: all 0.15s;
+/* ===== Provider 编辑面板 ===== */
+.edit-panel { padding: 12px 16px; }
+.edit-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
 }
-.preset-item:hover { border-color: #7C6BF0; background: #16213e; }
-.preset-item.selected { border-color: #7C6BF0; background: #1a2744; }
-.preset-name { font-weight: 600; font-size: 13px; }
-.preset-count { font-size: 11px; color: #666; margin-top: 2px; }
-
-/* ===== 分隔线 ===== */
-.divider { height: 1px; background: #ffffff10; margin: 16px 0; }
-
-/* ===== 面板 ===== */
-.panel { display: none; }
-.panel.active { display: block; }
-.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
-.tab {
-  padding: 8px 16px; border-radius: 6px; cursor: pointer;
-  font-size: 13px; color: #888; transition: all 0.15s;
+.edit-back {
+  width: 32px; height: 32px; border-radius: 8px; border: 1px solid #ffffff15;
+  background: transparent; color: #888; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
 }
-.tab:hover { color: #ccc; background: #ffffff08; }
-.tab.active { color: #fff; background: #7C6BF0; }
+.edit-back:hover { background: #ffffff0a; color: #fff; }
+.edit-title { font-size: 16px; font-weight: 600; }
+.edit-provider-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 16px; color: #fff;
+}
+
+/* ===== 按钮 ===== */
+.btn {
+  padding: 8px 16px; border-radius: 8px; border: none;
+  font-size: 13px; cursor: pointer; font-weight: 500; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.btn-primary { background: linear-gradient(135deg, #7C6BF0, #6B5CE0); color: #fff; }
+.btn-primary:hover { box-shadow: 0 4px 12px #7C6BF040; transform: translateY(-1px); }
+.btn-danger { background: #e74c3c15; color: #e74c3c; border: 1px solid #e74c3c30; }
+.btn-danger:hover { background: #e74c3c30; }
+.btn-ghost { background: transparent; color: #888; border: 1px solid #ffffff15; }
+.btn-ghost:hover { background: #ffffff08; color: #ccc; }
+.btn-speed { background: #4ECDC415; color: #4ECDC4; border: 1px solid #4ECDC430; }
+.btn-speed:hover { background: #4ECDC430; }
+.btn-sm { padding: 5px 10px; font-size: 11px; border-radius: 6px; }
+.btn-block { width: 100%; justify-content: center; }
+
+/* ===== Divider ===== */
+.divider { height: 1px; background: #ffffff08; margin: 16px 0; }
 
 /* ===== Toast ===== */
 .toast {
   position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-  padding: 10px 20px; border-radius: 8px; font-size: 13px;
+  padding: 10px 24px; border-radius: 10px; font-size: 13px; font-weight: 500;
   opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100;
+  box-shadow: 0 8px 24px #00000080;
 }
 .toast.show { opacity: 1; }
 .toast-success { background: #27ae60; color: #fff; }
 .toast-error { background: #e74c3c; color: #fff; }
+.toast-info { background: #3498db; color: #fff; }
+
+/* ===== Panel visibility ===== */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ===== 空状态 ===== */
+.empty-state {
+  text-align: center; padding: 40px 20px; color: #555;
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.3; }
+.empty-text { font-size: 14px; margin-bottom: 8px; }
+.empty-hint { font-size: 12px; color: #444; }
+
+/* ===== Speed test animation ===== */
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.testing { animation: pulse 1s infinite; }
+
+/* ===== Model row in edit panel ===== */
+.model-edit-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 0;
+  border-bottom: 1px solid #ffffff06;
+}
+.model-edit-row:last-child { border-bottom: none; }
+.model-edit-name { flex: 1; font-size: 13px; }
+.model-edit-id { font-size: 11px; color: #555; flex: 1; }
 </style>
 </head>
 <body>
 
-<!-- Tabs -->
-<div class="tabs">
-  <div class="tab active" onclick="showTab('switch')">切换模型</div>
-  <div class="tab" onclick="showTab('providers')">Provider 管理</div>
-  <div class="tab" onclick="showTab('add')">添加 Provider</div>
-</div>
-
-<!-- Tab 1: 模型切换 -->
-<div id="panel-switch" class="panel active">
-  <div class="current-model" id="currentModel">
-    <div class="current-badge" id="currentBadge">OP</div>
-    <div class="current-info">
-      <div class="current-name" id="currentName">加载中...</div>
-      <div class="current-provider" id="currentProvider">-</div>
-    </div>
+<!-- 顶部栏 -->
+<div class="header">
+  <div class="header-left">
+    <span class="header-title">CC Switch</span>
   </div>
-  <h3>可用模型</h3>
-  <div class="model-grid" id="modelGrid"></div>
+  <div class="header-right">
+    <div class="header-tab active" data-tab="main" onclick="showTab('main')">Providers</div>
+    <div class="header-tab" data-tab="models" onclick="showTab('models')">Models</div>
+    <button class="header-add" onclick="showTab('add')" title="添加 Provider">+</button>
+  </div>
 </div>
 
-<!-- Tab 2: Provider 管理 -->
-<div id="panel-providers" class="panel">
-  <h3>已配置的 Providers</h3>
-  <div id="providerList"></div>
+<!-- Panel 1: 主界面 — Provider 列表 -->
+<div id="panel-main" class="panel active">
+  <!-- 当前模型指示器 -->
+  <div class="current-indicator" id="currentIndicator"></div>
+  
+  <!-- 全局测速按钮 -->
+  <div style="padding: 0 16px 8px; display: flex; gap: 8px;">
+    <button class="btn btn-speed btn-sm" onclick="speedTestAll()" id="speedTestAllBtn">⏱ 全部测速</button>
+    <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↻ 刷新</button>
+  </div>
+  
+  <!-- Provider 卡片列表 -->
+  <div class="provider-list" id="providerList"></div>
 </div>
 
-<!-- Tab 3: 添加 Provider -->
+<!-- Panel 2: 模型列表 -->
+<div id="panel-models" class="panel">
+  <div class="model-panel" id="modelPanel"></div>
+</div>
+
+<!-- Panel 3: 添加 Provider -->
 <div id="panel-add" class="panel">
-  <h3>从预设模板添加</h3>
-  <div class="preset-grid" id="presetGrid"></div>
-  
-  <div class="divider"></div>
-  
-  <h3>Provider 配置</h3>
-  <div class="form-group">
-    <label class="form-label">名称 *</label>
-    <input class="form-input" id="addName" placeholder="例如: MyOpenAI, 云雾API, etc.">
-  </div>
-  <div class="form-group">
-    <label class="form-label">Base URL *</label>
-    <input class="form-input" id="addBaseUrl" placeholder="https://api.openai.com/v1">
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label class="form-label">API Key *</label>
-      <input class="form-input" id="addApiKey" type="password" placeholder="sk-...">
+  <div class="add-panel">
+    <div class="preset-section-title">Provider Preset</div>
+    <div class="preset-grid" id="presetGrid"></div>
+    
+    <div class="form-hint" style="text-align: center; margin-bottom: 16px;">
+      💡 Only need to fill in API Key, endpoint is preset
     </div>
-    <div class="form-group">
-      <label class="form-label">API 类型</label>
-      <select class="form-select" id="addApiType">
-        <option value="anthropic-messages">Anthropic Messages API (Claude)</option>
-        <option value="openai-chat">OpenAI Chat Completions (GPT/DeepSeek/Qwen)</option>
-        <option value="google-gemini">Google Gemini API</option>
-      </select>
-    </div>
-  </div>
+    
+    <div class="divider"></div>
+    
+    <div class="form-section">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Provider Name *</label>
+          <input class="form-input" id="addName" placeholder="e.g. MyOpenAI, 云雾API">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <input class="form-input" id="addNotes" placeholder="e.g. Company account">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Base URL *</label>
+        <input class="form-input" id="addBaseUrl" placeholder="https://api.openai.com/v1">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">API Key *</label>
+          <input class="form-input" id="addApiKey" type="password" placeholder="sk-...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">API Type</label>
+          <select class="form-select" id="addApiType">
+            <option value="anthropic-messages">Anthropic Messages (Claude)</option>
+            <option value="openai-chat">OpenAI Chat Completions</option>
+            <option value="google-gemini">Google Gemini API</option>
+          </select>
+        </div>
+      </div>
 
-  <div class="divider"></div>
-  <h3>添加模型（可选，稍后也能添加）</h3>
-  <div id="addModelRows">
-    <div class="form-row" style="margin-bottom: 6px;">
-      <input class="form-input" placeholder="模型ID (例: gpt-4o)" data-field="id">
-      <input class="form-input" placeholder="显示名称" data-field="name">
+      <div class="divider"></div>
+      
+      <div style="font-size: 12px; color: #888; margin-bottom: 8px;">Models (optional)</div>
+      <div id="addModelRows">
+        <div class="form-row" style="margin-bottom: 6px;">
+          <input class="form-input" placeholder="Model ID (e.g. gpt-4o)" data-field="id">
+          <input class="form-input" placeholder="Display Name" data-field="name">
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-bottom: 16px;" onclick="addModelRow()">+ Add Model</button>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-primary btn-block" onclick="submitProvider()">+ Add</button>
+        <button class="btn btn-ghost" onclick="showTab('main')">Cancel</button>
+      </div>
     </div>
   </div>
-  <button class="btn btn-ghost btn-sm" style="margin-bottom: 12px;" onclick="addModelRow()">+ 添加更多模型</button>
+</div>
 
-  <div style="display: flex; gap: 8px;">
-    <button class="btn btn-primary" onclick="submitProvider()">保存 Provider</button>
-    <button class="btn btn-ghost" onclick="showTab('switch')">取消</button>
-  </div>
+<!-- Panel 4: 编辑 Provider -->
+<div id="panel-edit" class="panel">
+  <div class="edit-panel" id="editPanel"></div>
 </div>
 
 <!-- Toast -->
@@ -211,19 +385,143 @@ let ipcRenderer;
 try { ipcRenderer = require('electron').ipcRenderer; } catch(e) {}
 
 let allModels = [];
+let allProviders = [];
 let currentModel = null;
 let selectedPreset = null;
+let editingProvider = null;
 
 // ===== Tab 切换 =====
 function showTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(`panel-${name}`).classList.add('active');
-  event.target.classList.add('active');
+  document.querySelectorAll('.header-tab').forEach(t => t.classList.remove('active'));
   
-  if (name === 'switch') loadModels();
-  if (name === 'providers') loadProviders();
-  if (name === 'add') loadPresets();
+  const panel = document.getElementById(`panel-${name}`);
+  if (panel) panel.classList.add('active');
+  
+  const tab = document.querySelector(`.header-tab[data-tab="${name}"]`);
+  if (tab) tab.classList.add('active');
+  
+  if (name === 'main') { loadAll(); }
+  if (name === 'models') { loadModels(); }
+  if (name === 'add') { loadPresets(); }
+}
+
+// ===== 加载全部数据 =====
+async function loadAll() {
+  if (!ipcRenderer) return;
+  const status = await ipcRenderer.invoke('model-full-status');
+  if (!status) return;
+  
+  allModels = status.models || [];
+  allProviders = status.providers || [];
+  currentModel = status.current;
+  
+  renderCurrentIndicator();
+  renderProviderList();
+}
+
+// ===== 渲染当前模型指示器 =====
+function renderCurrentIndicator() {
+  const el = document.getElementById('currentIndicator');
+  if (!currentModel) {
+    el.innerHTML = `
+      <div class="empty-state" style="padding: 16px;">
+        <div class="empty-text">No model selected</div>
+      </div>`;
+    return;
+  }
+  
+  el.innerHTML = `
+    <div class="current-icon" style="background:${currentModel.color}">${currentModel.icon}</div>
+    <div class="current-info">
+      <div class="current-label">Currently Using</div>
+      <div class="current-model-name">${currentModel.shortName}</div>
+      <div class="current-provider-name">${currentModel.provider} · ${currentModel.modelId}</div>
+    </div>
+    <button class="current-switch-btn" onclick="showTab('models')">Switch</button>
+  `;
+}
+
+// ===== 渲染 Provider 卡片列表 =====
+function renderProviderList() {
+  const el = document.getElementById('providerList');
+  
+  if (allProviders.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⊕</div>
+        <div class="empty-text">No providers configured</div>
+        <div class="empty-hint">Click + to add your first provider</div>
+      </div>`;
+    return;
+  }
+  
+  el.innerHTML = allProviders.map(p => {
+    const isCurrent = p.isCurrent;
+    const speedHtml = renderSpeedBadge(p.speedTest);
+    const modelsText = `${p.modelCount} model${p.modelCount !== 1 ? 's' : ''}`;
+    
+    return `
+    <div class="provider-card ${isCurrent ? 'current' : ''}" ondblclick="editProvider('${p.name}')">
+      <div class="drag-handle">
+        <div class="drag-dot"><span></span><span></span></div>
+        <div class="drag-dot"><span></span><span></span></div>
+        <div class="drag-dot"><span></span><span></span></div>
+      </div>
+      <div class="provider-icon" style="background:${p.color}">${p.icon}</div>
+      <div class="provider-info">
+        <div class="provider-name-row">
+          <span class="provider-name">${p.name}</span>
+          ${isCurrent ? '<span class="provider-badge">Currently Using</span>' : ''}
+        </div>
+        <div class="provider-url">${p.website || p.baseUrl || 'No endpoint'}</div>
+      </div>
+      <div class="provider-right">
+        ${speedHtml}
+        <div class="provider-models-count">${modelsText}</div>
+        <div class="provider-actions-row">
+          <button class="btn btn-speed btn-sm" onclick="event.stopPropagation();speedTest('${p.name}')" title="测速">⏱</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editProvider('${p.name}')" title="编辑">✎</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSpeedBadge(speedTest) {
+  if (!speedTest) return '<div class="provider-speed">--</div>';
+  if (speedTest.status === 'error') return '<div class="provider-speed slow">Error</div>';
+  const ms = speedTest.latencyMs;
+  const cls = ms < 1000 ? 'fast' : ms < 3000 ? 'medium' : 'slow';
+  return `<div class="provider-speed ${cls}">${ms}ms</div>`;
+}
+
+// ===== 测速 =====
+async function speedTest(providerName) {
+  if (!ipcRenderer) return;
+  showToast(`Testing ${providerName}...`, 'info');
+  const result = await ipcRenderer.invoke('model-speed-test', providerName);
+  if (result.status === 'ok') {
+    showToast(`${providerName}: ${result.latencyMs}ms (${result.quality})`, 'success');
+  } else {
+    showToast(`${providerName}: ${result.error || 'Failed'}`, 'error');
+  }
+  loadAll();
+}
+
+async function speedTestAll() {
+  if (!ipcRenderer) return;
+  const btn = document.getElementById('speedTestAllBtn');
+  btn.classList.add('testing');
+  btn.textContent = '⏱ Testing...';
+  
+  showToast('Testing all providers...', 'info');
+  await ipcRenderer.invoke('model-speed-test-all');
+  
+  btn.classList.remove('testing');
+  btn.textContent = '⏱ 全部测速';
+  showToast('Speed test complete!', 'success');
+  loadAll();
 }
 
 // ===== 加载模型列表 =====
@@ -232,35 +530,50 @@ async function loadModels() {
   const status = await ipcRenderer.invoke('model-full-status');
   if (!status) return;
   
-  allModels = status.models;
+  allModels = status.models || [];
   currentModel = status.current;
   
-  // 更新当前模型指示器
-  if (currentModel) {
-    document.getElementById('currentBadge').textContent = currentModel.icon;
-    document.getElementById('currentBadge').style.background = currentModel.color;
-    document.getElementById('currentName').textContent = currentModel.shortName;
-    document.getElementById('currentProvider').textContent = `${currentModel.provider} · ${currentModel.modelId}`;
+  const panel = document.getElementById('modelPanel');
+  
+  // 按 Provider 分组
+  const groups = {};
+  for (const m of allModels) {
+    if (!groups[m.provider]) groups[m.provider] = [];
+    groups[m.provider].push(m);
   }
   
-  // 渲染模型列表
-  const grid = document.getElementById('modelGrid');
-  let lastProvider = '';
-  grid.innerHTML = allModels.map(m => {
-    const isActive = currentModel?.id === m.id;
-    let providerHeader = '';
-    if (m.provider !== lastProvider) {
-      providerHeader = `<div style="font-size:11px;color:#555;padding:8px 0 4px;text-transform:uppercase;letter-spacing:1px;">${m.provider}</div>`;
-      lastProvider = m.provider;
+  let html = '';
+  for (const [provider, models] of Object.entries(groups)) {
+    const providerInfo = allProviders.find(p => p.name === provider) || {};
+    html += `<div class="model-section-title">${provider}</div>`;
+    html += '<div class="model-grid">';
+    for (const m of models) {
+      const isActive = currentModel?.id === m.id;
+      const ctxK = Math.round(m.contextWindow / 1000);
+      html += `
+      <div class="model-row ${isActive ? 'active' : ''}" onclick="switchModel('${m.id}')">
+        <div class="model-icon-sm" style="background:${m.color}">${m.icon}</div>
+        <div class="model-name-text">${m.shortName}</div>
+        <div class="model-tags">
+          ${m.reasoning ? '<span class="model-tag reasoning">🧠 Reasoning</span>' : ''}
+          <span class="model-tag">${ctxK}K</span>
+        </div>
+        <div class="model-check-mark">${isActive ? '✓' : ''}</div>
+      </div>`;
     }
-    return `${providerHeader}
-    <div class="model-item ${isActive ? 'active' : ''}" onclick="switchModel('${m.id}')">
-      <div class="model-icon" style="background:${m.color}">${m.icon}</div>
-      <div class="model-name">${m.shortName}</div>
-      <div class="model-meta">${m.reasoning ? '🧠' : ''} ${Math.round(m.contextWindow/1000)}K</div>
-      <div class="model-check">${isActive ? '✓' : ''}</div>
-    </div>`;
-  }).join('');
+    html += '</div>';
+  }
+  
+  if (allModels.length === 0) {
+    html = `
+      <div class="empty-state">
+        <div class="empty-icon">⊘</div>
+        <div class="empty-text">No models available</div>
+        <div class="empty-hint">Add a provider first</div>
+      </div>`;
+  }
+  
+  panel.innerHTML = html;
 }
 
 // ===== 切换模型 =====
@@ -268,65 +581,138 @@ async function switchModel(modelId) {
   if (!ipcRenderer) return;
   const result = await ipcRenderer.invoke('model-switch', modelId);
   if (result) {
-    showToast(`已切换到 ${result.shortName}`, 'success');
+    showToast(`Switched to ${result.shortName}`, 'success');
     loadModels();
-  }
-}
-
-// ===== 加载 Provider 列表 =====
-async function loadProviders() {
-  if (!ipcRenderer) return;
-  const providers = await ipcRenderer.invoke('model-providers');
-  const list = document.getElementById('providerList');
-  
-  list.innerHTML = providers.map(p => `
-    <div class="provider-card">
-      <div class="provider-header">
-        <div>
-          <div class="provider-name">${p.name}</div>
-          <div class="provider-url">${p.baseUrl || '(no base URL)'}</div>
-        </div>
-        <div class="provider-actions">
-          <button class="btn btn-ghost btn-sm" onclick="editProvider('${p.name}')">编辑</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteProvider('${p.name}')">删除</button>
-        </div>
-      </div>
-      <div class="provider-models">
-        ${p.apiType} · ${p.modelCount} 个模型 · API Key: ${p.hasApiKey ? '✅ 已配置' : '❌ 未配置'}
-      </div>
-    </div>
-  `).join('');
-}
-
-// ===== 删除 Provider =====
-async function deleteProvider(name) {
-  if (!confirm(`确定删除 Provider "${name}"？\n其下所有模型将不可用。`)) return;
-  const result = await ipcRenderer.invoke('model-remove-provider', name);
-  if (result.success) {
-    showToast(`已删除 ${name}`, 'success');
-    loadProviders();
-    loadModels();
-  } else {
-    showToast(result.error, 'error');
   }
 }
 
 // ===== 编辑 Provider =====
 async function editProvider(name) {
-  const newBaseUrl = prompt(`编辑 "${name}" 的 Base URL:`, '');
-  if (newBaseUrl === null) return;
-  const newApiKey = prompt(`编辑 "${name}" 的 API Key (留空不修改):`, '');
+  editingProvider = name;
+  
+  const status = await ipcRenderer.invoke('model-full-status');
+  const provider = status.providers.find(p => p.name === name);
+  if (!provider) return;
+  
+  // 获取完整 provider 数据（含 models）
+  const providerData = allProviders.find(p => p.name === name) || provider;
+  
+  // 获取该 provider 下的模型列表
+  const providerModels = allModels.filter(m => m.provider === name);
+  
+  const editEl = document.getElementById('editPanel');
+  editEl.innerHTML = `
+    <div class="edit-header">
+      <button class="edit-back" onclick="showTab('main')">←</button>
+      <div class="edit-provider-icon" style="background:${provider.color}">${provider.icon}</div>
+      <div>
+        <div class="edit-title">${name}</div>
+        <div style="font-size:11px;color:#666;">${provider.apiType}</div>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Base URL</label>
+      <input class="form-input" id="editBaseUrl" value="${provider.baseUrl || ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">API Key</label>
+      <input class="form-input" id="editApiKey" type="password" placeholder="${provider.hasApiKey ? '••••••••(已配置)' : '未配置'}" value="">
+      <div class="form-hint">${provider.hasApiKey ? '✅ Key is set. Leave empty to keep unchanged.' : '❌ No key configured.'}</div>
+    </div>
+    
+    <div style="display: flex; gap: 8px; margin-top: 12px;">
+      <button class="btn btn-primary" onclick="saveProviderEdit()">Save Changes</button>
+      <button class="btn btn-speed" onclick="speedTest('${name}')">⏱ Test</button>
+      <button class="btn btn-danger" onclick="deleteProvider('${name}')">Delete</button>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div style="font-size: 13px; font-weight: 600; color: #aaa; margin-bottom: 8px;">
+      Models (${providerModels.length})
+    </div>
+    ${providerModels.map(m => `
+      <div class="model-edit-row">
+        <div class="model-icon-sm" style="background:${m.color};width:24px;height:24px;font-size:10px;">${m.icon}</div>
+        <div class="model-edit-name">${m.shortName}</div>
+        <div class="model-edit-id">${m.modelId}</div>
+        <button class="btn btn-danger btn-sm" onclick="removeModel('${name}','${m.modelId}')">×</button>
+      </div>
+    `).join('')}
+    
+    <div style="margin-top: 10px;">
+      <div class="form-row" style="margin-bottom: 6px;">
+        <input class="form-input" id="newModelId" placeholder="New model ID" style="font-size:12px;">
+        <input class="form-input" id="newModelName" placeholder="Display name" style="font-size:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="addModelToProvider('${name}')">+</button>
+      </div>
+    </div>
+  `;
+  
+  // 切换到编辑面板
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.header-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-edit').classList.add('active');
+}
+
+async function saveProviderEdit() {
+  if (!editingProvider || !ipcRenderer) return;
+  
+  const baseUrl = document.getElementById('editBaseUrl').value.trim();
+  const apiKey = document.getElementById('editApiKey').value.trim();
   
   const updates = {};
-  if (newBaseUrl) updates.baseUrl = newBaseUrl;
-  if (newApiKey) updates.apiKey = newApiKey;
+  if (baseUrl) updates.baseUrl = baseUrl;
+  if (apiKey) updates.apiKey = apiKey;
   
-  if (Object.keys(updates).length === 0) return;
+  if (Object.keys(updates).length === 0) {
+    showToast('No changes to save', 'info');
+    return;
+  }
   
-  const result = await ipcRenderer.invoke('model-update-provider', name, updates);
+  const result = await ipcRenderer.invoke('model-update-provider', editingProvider, updates);
   if (result.success) {
-    showToast(`已更新 ${name}`, 'success');
-    loadProviders();
+    showToast(`Updated ${editingProvider}`, 'success');
+    showTab('main');
+  } else {
+    showToast(result.error, 'error');
+  }
+}
+
+async function deleteProvider(name) {
+  if (!confirm(`Delete provider "${name}"?\nAll its models will become unavailable.`)) return;
+  const result = await ipcRenderer.invoke('model-remove-provider', name);
+  if (result.success) {
+    showToast(`Deleted ${name}`, 'success');
+    showTab('main');
+  } else {
+    showToast(result.error, 'error');
+  }
+}
+
+async function removeModel(providerName, modelId) {
+  if (!confirm(`Remove model "${modelId}" from ${providerName}?`)) return;
+  const result = await ipcRenderer.invoke('model-remove-model', providerName, modelId);
+  if (result.success) {
+    showToast('Model removed', 'success');
+    editProvider(providerName); // 刷新编辑面板
+    await loadAll(); // 刷新数据
+  } else {
+    showToast(result.error, 'error');
+  }
+}
+
+async function addModelToProvider(providerName) {
+  const id = document.getElementById('newModelId').value.trim();
+  const name = document.getElementById('newModelName').value.trim();
+  if (!id) return showToast('Please enter model ID', 'error');
+  
+  const result = await ipcRenderer.invoke('model-add-model', providerName, { id, name: name || id });
+  if (result.success) {
+    showToast(`Added ${id}`, 'success');
+    editProvider(providerName);
+    await loadAll();
   } else {
     showToast(result.error, 'error');
   }
@@ -339,24 +725,35 @@ async function loadPresets() {
   const grid = document.getElementById('presetGrid');
   
   grid.innerHTML = presets.map(p => `
-    <div class="preset-item ${selectedPreset === p.key ? 'selected' : ''}" 
-         onclick="selectPreset('${p.key}', '${p.name}', '${p.baseUrl}', '${p.api}')">
-      <div class="preset-name">${p.name}</div>
-      <div class="preset-count">${p.modelCount} 模型</div>
+    <div class="preset-card ${selectedPreset === p.key ? 'selected' : ''}" 
+         onclick="selectPreset('${p.key}')">
+      <div class="preset-card-count">${p.modelCount}</div>
+      <div class="preset-card-icon" style="background:${p.color}">${p.icon}</div>
+      <div class="preset-card-name">${p.name}</div>
+      <div class="preset-card-desc">${p.description || ''}</div>
     </div>
   `).join('');
 }
 
-// ===== 选择预设 =====
-function selectPreset(key, name, baseUrl, api) {
-  selectedPreset = key;
-  document.getElementById('addName').value = name;
-  document.getElementById('addBaseUrl').value = baseUrl;
-  document.getElementById('addApiType').value = api;
+function selectPreset(key) {
+  if (!ipcRenderer) return;
   
-  // 高亮选中
-  document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('selected'));
-  event.target.closest('.preset-item').classList.add('selected');
+  ipcRenderer.invoke('model-presets').then(presets => {
+    const preset = presets.find(p => p.key === key);
+    if (!preset) return;
+    
+    selectedPreset = key;
+    document.getElementById('addName').value = preset.name;
+    document.getElementById('addBaseUrl').value = preset.baseUrl;
+    
+    // 设置 API 类型
+    const apiSelect = document.getElementById('addApiType');
+    apiSelect.value = preset.api;
+    
+    // 高亮选中
+    document.querySelectorAll('.preset-card').forEach(el => el.classList.remove('selected'));
+    event.target.closest('.preset-card').classList.add('selected');
+  });
 }
 
 // ===== 添加模型行 =====
@@ -366,8 +763,8 @@ function addModelRow() {
   row.className = 'form-row';
   row.style.marginBottom = '6px';
   row.innerHTML = `
-    <input class="form-input" placeholder="模型ID (例: gpt-4o)" data-field="id">
-    <input class="form-input" placeholder="显示名称" data-field="name">
+    <input class="form-input" placeholder="Model ID (e.g. gpt-4o)" data-field="id">
+    <input class="form-input" placeholder="Display Name" data-field="name">
   `;
   container.appendChild(row);
 }
@@ -379,15 +776,16 @@ async function submitProvider() {
   const apiKey = document.getElementById('addApiKey').value.trim();
   const api = document.getElementById('addApiType').value;
   
-  if (!name) return showToast('请输入 Provider 名称', 'error');
-  if (!apiKey) return showToast('请输入 API Key', 'error');
+  if (!name) return showToast('Please enter provider name', 'error');
+  if (!apiKey) return showToast('Please enter API Key', 'error');
   
   let result;
-  if (selectedPreset && !document.querySelectorAll('#addModelRows .form-row input[data-field="id"]')[0]?.value) {
-    // 使用预设模板（没有手动填模型）
+  const firstModelInput = document.querySelector('#addModelRows .form-row input[data-field="id"]');
+  const hasManualModels = firstModelInput && firstModelInput.value.trim();
+  
+  if (selectedPreset && !hasManualModels) {
     result = await ipcRenderer.invoke('model-add-from-preset', selectedPreset, apiKey, name, baseUrl || undefined);
   } else {
-    // 手动配置
     const modelRows = document.querySelectorAll('#addModelRows .form-row');
     const models = [];
     modelRows.forEach(row => {
@@ -400,19 +798,22 @@ async function submitProvider() {
   }
   
   if (result.success) {
-    showToast(`Provider "${name}" 添加成功！`, 'success');
+    showToast(`Provider "${name}" added!`, 'success');
     // 清空表单
     document.getElementById('addName').value = '';
     document.getElementById('addBaseUrl').value = '';
     document.getElementById('addApiKey').value = '';
+    document.getElementById('addNotes').value = '';
     selectedPreset = null;
-    showTab('switch');
-    // 手动触发tab样式
-    document.querySelectorAll('.tab')[0].classList.add('active');
-    document.querySelectorAll('.tab')[2].classList.remove('active');
+    showTab('main');
   } else {
     showToast(result.error, 'error');
   }
+}
+
+function refreshAll() {
+  loadAll();
+  showToast('Refreshed', 'info');
 }
 
 // ===== Toast =====
@@ -424,11 +825,14 @@ function showToast(msg, type = 'success') {
 }
 
 // ===== 初始化 =====
-loadModels();
+loadAll();
 
 // 监听模型变更
 if (ipcRenderer) {
-  ipcRenderer.on('model-changed', () => loadModels());
+  ipcRenderer.on('model-changed', () => {
+    loadAll();
+    loadModels();
+  });
 }
 </script>
 </body>

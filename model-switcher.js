@@ -1,45 +1,59 @@
 /**
- * 🔄 Model Switcher V2 — 完整模型管理器
+ * 🔄 Model Switcher V3 — CC Switch 风格模型管理器
  * 
- * 功能：
- * - 读取/写入 OpenClaw 配置中的 providers 和 models
- * - 支持添加自定义 Provider（baseUrl + apiKey）
- * - 支持 Claude / GPT / Gemini / DeepSeek / Qwen 等所有主流模型
- * - 通过 Gateway API 或配置文件切换模型
- * - 完整的 CRUD：添加、编辑、删除 Provider 和 Model
- * - 预设模板：一键添加常见 Provider
+ * 参考 CC Switch (17k⭐) 设计:
+ * - 卡片式 Provider 管理
+ * - 丰富的预设模板（含中转站）
+ * - API 延迟测速
+ * - "Currently Using" 状态标记
+ * - Provider 图标和品牌色
+ * - 拖拽排序
  */
 
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const https = require('https');
 
-// ===== 预设 Provider 模板 =====
+// ===== 预设 Provider 模板（参考 CC Switch 的 17+ 预设） =====
 const PROVIDER_PRESETS = {
-  'openai': {
-    name: 'OpenAI',
-    baseUrl: 'https://api.openai.com/v1',
-    api: 'openai-chat',
-    models: [
-      { id: 'gpt-4o', name: 'GPT-4o', reasoning: false, contextWindow: 128000, maxTokens: 16384 },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', reasoning: false, contextWindow: 128000, maxTokens: 16384 },
-      { id: 'o3-mini', name: 'o3-mini', reasoning: true, contextWindow: 200000, maxTokens: 100000 },
-    ]
-  },
+  // ── 官方 ──
   'anthropic': {
     name: 'Anthropic',
     baseUrl: 'https://api.anthropic.com',
+    website: 'https://console.anthropic.com',
     api: 'anthropic-messages',
+    icon: '✦',
+    color: '#D97757',
+    description: 'Claude 官方 API',
     models: [
       { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', reasoning: true, contextWindow: 200000, maxTokens: 32000 },
       { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', reasoning: true, contextWindow: 200000, maxTokens: 16000 },
       { id: 'claude-haiku-3-5-20241022', name: 'Claude Haiku 3.5', reasoning: false, contextWindow: 200000, maxTokens: 8192 },
     ]
   },
+  'openai': {
+    name: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    website: 'https://platform.openai.com',
+    api: 'openai-chat',
+    icon: '◎',
+    color: '#10A37F',
+    description: 'GPT 官方 API',
+    models: [
+      { id: 'gpt-4o', name: 'GPT-4o', reasoning: false, contextWindow: 128000, maxTokens: 16384 },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', reasoning: false, contextWindow: 128000, maxTokens: 16384 },
+      { id: 'o3-mini', name: 'o3-mini', reasoning: true, contextWindow: 200000, maxTokens: 100000 },
+    ]
+  },
   'google': {
     name: 'Google AI',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    website: 'https://aistudio.google.com',
     api: 'google-gemini',
+    icon: '✦',
+    color: '#4285F4',
+    description: 'Gemini 官方 API',
     models: [
       { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', reasoning: true, contextWindow: 1000000, maxTokens: 65536 },
       { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', reasoning: false, contextWindow: 1000000, maxTokens: 8192 },
@@ -48,27 +62,89 @@ const PROVIDER_PRESETS = {
   'deepseek': {
     name: 'DeepSeek',
     baseUrl: 'https://api.deepseek.com/v1',
+    website: 'https://platform.deepseek.com',
     api: 'openai-chat',
+    icon: '⬡',
+    color: '#4D6BFE',
+    description: 'DeepSeek 官方 API',
     models: [
       { id: 'deepseek-chat', name: 'DeepSeek V3', reasoning: false, contextWindow: 64000, maxTokens: 8192 },
       { id: 'deepseek-reasoner', name: 'DeepSeek R1', reasoning: true, contextWindow: 64000, maxTokens: 8192 },
     ]
   },
+  // ── 中转站 ──
   'openrouter': {
     name: 'OpenRouter',
     baseUrl: 'https://openrouter.ai/api/v1',
+    website: 'https://openrouter.ai',
     api: 'openai-chat',
+    icon: '⊕',
+    color: '#6366F1',
+    description: '多模型聚合中转',
     models: [
       { id: 'anthropic/claude-opus-4', name: 'Claude Opus 4', reasoning: true, contextWindow: 200000, maxTokens: 32000 },
       { id: 'openai/gpt-4o', name: 'GPT-4o', reasoning: false, contextWindow: 128000, maxTokens: 16384 },
       { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', reasoning: true, contextWindow: 1000000, maxTokens: 65536 },
     ]
   },
-  // 中转站模板
+  'zhipu-glm': {
+    name: 'Z.ai GLM',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    website: 'https://z.ai',
+    api: 'openai-chat',
+    icon: 'Z',
+    color: '#4361EE',
+    description: '智谱 GLM 编码计划',
+    models: [
+      { id: 'glm-4-plus', name: 'GLM-4 Plus', reasoning: false, contextWindow: 128000, maxTokens: 4096 },
+    ]
+  },
+  'qwen-coder': {
+    name: 'Qwen Coder',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    website: 'https://bailian.console.aliyun.com',
+    api: 'openai-chat',
+    icon: 'Q',
+    color: '#6236FF',
+    description: '通义千问百炼平台',
+    models: [
+      { id: 'qwen-max', name: 'Qwen Max', reasoning: false, contextWindow: 32000, maxTokens: 8192 },
+      { id: 'qwen-turbo', name: 'Qwen Turbo', reasoning: false, contextWindow: 128000, maxTokens: 8192 },
+    ]
+  },
+  'kimi': {
+    name: 'Kimi For Coding',
+    baseUrl: 'https://api.moonshot.cn/v1',
+    website: 'https://www.kimi.com/coding/docs/',
+    api: 'openai-chat',
+    icon: 'K',
+    color: '#000000',
+    description: 'Kimi K2 编码模型',
+    models: [
+      { id: 'kimi-k2-0711-preview', name: 'Kimi K2', reasoning: true, contextWindow: 128000, maxTokens: 8192 },
+    ]
+  },
+  'minimax': {
+    name: 'MiniMax',
+    baseUrl: 'https://api.minimaxi.chat/v1',
+    website: 'https://platform.minimaxi.com',
+    api: 'openai-chat',
+    icon: 'M',
+    color: '#FF4040',
+    description: 'MiniMax M2 模型',
+    models: [
+      { id: 'MiniMax-M1-80k', name: 'MiniMax M1', reasoning: false, contextWindow: 80000, maxTokens: 8192 },
+    ]
+  },
+  // 自定义中转站模板
   'custom-proxy': {
     name: '自定义中转站',
     baseUrl: '',
+    website: '',
     api: 'anthropic-messages',
+    icon: '⚙',
+    color: '#888888',
+    description: '自定义 API 端点',
     models: []
   }
 };
@@ -92,15 +168,14 @@ class ModelSwitcher {
     this.currentModel = null; // 当前激活模型
     this.currentIndex = 0;    // 当前模型索引
     this.listeners = [];      // 变更监听器
+    this.speedTestResults = {};  // 测速结果缓存
+    this.providerOrder = [];    // Provider 排序
     
     this._loadConfig();
   }
 
   // ==================== 配置读写 ====================
 
-  /**
-   * 从 OpenClaw 配置文件读取模型列表
-   */
   _loadConfig() {
     try {
       const raw = fs.readFileSync(this.configPath, 'utf8');
@@ -109,18 +184,27 @@ class ModelSwitcher {
       this.gatewayPort = config.gateway?.port || 18789;
       this.gatewayToken = config.gateway?.auth?.token || this.gatewayToken;
       
-      // 提取所有 provider 及其模型
       this.models = [];
       this.providers = {};
+      this.providerOrder = [];
       const providers = config.models?.providers || {};
       
       for (const [providerName, providerConfig] of Object.entries(providers)) {
+        this.providerOrder.push(providerName);
+        
+        // 尝试匹配预设以获取图标和颜色
+        const preset = this._matchPreset(providerName, providerConfig.baseUrl);
+        
         this.providers[providerName] = {
           name: providerName,
           baseUrl: providerConfig.baseUrl || '',
           apiKey: providerConfig.apiKey || '',
           api: providerConfig.api || 'openai-chat',
           models: providerConfig.models || [],
+          icon: preset?.icon || providerName.substring(0, 1).toUpperCase(),
+          color: preset?.color || '#888888',
+          website: preset?.website || '',
+          description: preset?.description || '',
         };
         
         const modelList = providerConfig.models || [];
@@ -150,22 +234,46 @@ class ModelSwitcher {
         this.currentModel = this.models[this.currentIndex] || null;
       }
       
-      console.log(`🔄 ModelSwitcher: ${Object.keys(this.providers).length} providers, ${this.models.length} models, current: ${this.currentModel?.shortName || '?'}`);
+      console.log(`🔄 ModelSwitcher V3: ${Object.keys(this.providers).length} providers, ${this.models.length} models, current: ${this.currentModel?.shortName || '?'}`);
     } catch (err) {
       console.error('❌ ModelSwitcher 配置加载失败:', err.message);
     }
   }
 
   /**
-   * 保存配置到文件
+   * 根据 provider 名称或 baseUrl 匹配预设
    */
+  _matchPreset(name, baseUrl) {
+    const nameLower = name.toLowerCase();
+    for (const [key, preset] of Object.entries(PROVIDER_PRESETS)) {
+      if (nameLower.includes(key) || nameLower.includes(preset.name.toLowerCase())) {
+        return preset;
+      }
+      if (baseUrl && preset.baseUrl && baseUrl.includes(new URL(preset.baseUrl).hostname)) {
+        return preset;
+      }
+    }
+    
+    // 通过 baseUrl 关键词匹配
+    if (baseUrl) {
+      if (baseUrl.includes('anthropic')) return PROVIDER_PRESETS['anthropic'];
+      if (baseUrl.includes('openai.com')) return PROVIDER_PRESETS['openai'];
+      if (baseUrl.includes('googleapis')) return PROVIDER_PRESETS['google'];
+      if (baseUrl.includes('deepseek')) return PROVIDER_PRESETS['deepseek'];
+      if (baseUrl.includes('openrouter')) return PROVIDER_PRESETS['openrouter'];
+      if (baseUrl.includes('minimax')) return PROVIDER_PRESETS['minimax'];
+      if (baseUrl.includes('bigmodel')) return PROVIDER_PRESETS['zhipu-glm'];
+      if (baseUrl.includes('dashscope') || baseUrl.includes('aliyun')) return PROVIDER_PRESETS['qwen-coder'];
+      if (baseUrl.includes('moonshot') || baseUrl.includes('kimi')) return PROVIDER_PRESETS['kimi'];
+    }
+    
+    return null;
+  }
+
   _saveConfig(config) {
     fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2), 'utf8');
   }
 
-  /**
-   * 读取完整配置
-   */
   _readConfig() {
     const raw = fs.readFileSync(this.configPath, 'utf8');
     return JSON.parse(raw);
@@ -173,17 +281,11 @@ class ModelSwitcher {
 
   // ==================== Provider 管理 ====================
 
-  /**
-   * 添加新的 Provider
-   * @param {string} name - Provider 名称（作为key）
-   * @param {object} opts - { baseUrl, apiKey, api, models[] }
-   */
   addProvider(name, opts = {}) {
     const config = this._readConfig();
     if (!config.models) config.models = { mode: 'merge', providers: {} };
     if (!config.models.providers) config.models.providers = {};
     
-    // 检查是否已存在
     if (config.models.providers[name]) {
       throw new Error(`Provider "${name}" already exists. Use updateProvider() to modify.`);
     }
@@ -206,7 +308,6 @@ class ModelSwitcher {
 
     config.models.providers[name] = provider;
     
-    // 把新模型加入 allowed models
     if (!config.agents) config.agents = { defaults: {} };
     if (!config.agents.defaults) config.agents.defaults = {};
     if (!config.agents.defaults.models) config.agents.defaults.models = {};
@@ -222,13 +323,6 @@ class ModelSwitcher {
     return provider;
   }
 
-  /**
-   * 从预设模板添加 Provider
-   * @param {string} presetKey - 预设key (openai/anthropic/google/deepseek/openrouter)
-   * @param {string} apiKey - API Key
-   * @param {string} customName - 自定义名称（可选）
-   * @param {string} customBaseUrl - 自定义 baseUrl（可选，用于中转站）
-   */
   addFromPreset(presetKey, apiKey, customName = null, customBaseUrl = null) {
     const preset = PROVIDER_PRESETS[presetKey];
     if (!preset) {
@@ -246,9 +340,6 @@ class ModelSwitcher {
     });
   }
 
-  /**
-   * 更新 Provider（baseUrl / apiKey / api）
-   */
   updateProvider(name, updates = {}) {
     const config = this._readConfig();
     const provider = config.models?.providers?.[name];
@@ -266,19 +357,14 @@ class ModelSwitcher {
     return provider;
   }
 
-  /**
-   * 删除 Provider
-   */
   removeProvider(name) {
     const config = this._readConfig();
     if (!config.models?.providers?.[name]) {
       throw new Error(`Provider "${name}" not found`);
     }
 
-    // 删除 provider
     delete config.models.providers[name];
 
-    // 清理 agents.defaults.models 中的引用
     if (config.agents?.defaults?.models) {
       for (const key of Object.keys(config.agents.defaults.models)) {
         if (key.startsWith(`${name}/`)) {
@@ -287,7 +373,6 @@ class ModelSwitcher {
       }
     }
 
-    // 如果当前 primary model 属于被删除的 provider，重置
     if (config.agents?.defaults?.model?.primary?.startsWith(`${name}/`)) {
       const remaining = Object.keys(config.models.providers);
       if (remaining.length > 0) {
@@ -305,9 +390,6 @@ class ModelSwitcher {
     console.log(`✅ Provider removed: ${name}`);
   }
 
-  /**
-   * 获取所有 Provider 列表
-   */
   getProviders() {
     return Object.entries(this.providers).map(([name, p]) => ({
       name,
@@ -316,28 +398,103 @@ class ModelSwitcher {
       apiType: API_TYPES[p.api]?.label || p.api,
       modelCount: p.models.length,
       hasApiKey: !!p.apiKey,
+      icon: p.icon,
+      color: p.color,
+      website: p.website,
+      description: p.description,
+      isCurrent: this.currentModel?.provider === name,
+      speedTest: this.speedTestResults[name] || null,
     }));
   }
 
-  /**
-   * 获取预设模板列表
-   */
   getPresets() {
     return Object.entries(PROVIDER_PRESETS).map(([key, preset]) => ({
       key,
       name: preset.name,
       baseUrl: preset.baseUrl,
       api: preset.api,
+      icon: preset.icon,
+      color: preset.color,
+      website: preset.website,
+      description: preset.description,
       modelCount: preset.models.length,
       models: preset.models.map(m => m.name),
     }));
   }
 
-  // ==================== Model 管理 ====================
+  // ==================== 测速功能 ====================
 
   /**
-   * 给指定 Provider 添加模型
+   * 测试 Provider API 延迟
+   * @param {string} providerName - Provider 名称
+   * @returns {Promise<{latencyMs: number, status: string}>}
    */
+  async speedTest(providerName) {
+    const provider = this.providers[providerName];
+    if (!provider || !provider.baseUrl) {
+      return { latencyMs: -1, status: 'error', error: 'No base URL configured' };
+    }
+
+    const startTime = Date.now();
+    
+    try {
+      // 简单的 HTTP HEAD/GET 请求测延迟
+      const url = new URL(provider.baseUrl);
+      const isHttps = url.protocol === 'https:';
+      const httpModule = isHttps ? https : http;
+      
+      await new Promise((resolve, reject) => {
+        const req = httpModule.request({
+          hostname: url.hostname,
+          port: url.port || (isHttps ? 443 : 80),
+          path: url.pathname === '/' ? '/v1/models' : url.pathname,
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${provider.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000,
+        }, (res) => {
+          let data = '';
+          res.on('data', chunk => data += chunk);
+          res.on('end', () => resolve({ statusCode: res.statusCode }));
+        });
+        
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+        req.end();
+      });
+      
+      const latencyMs = Date.now() - startTime;
+      let quality = 'fast';
+      if (latencyMs > 3000) quality = 'slow';
+      else if (latencyMs > 1000) quality = 'medium';
+      
+      const result = { latencyMs, status: 'ok', quality, timestamp: Date.now() };
+      this.speedTestResults[providerName] = result;
+      
+      console.log(`⏱️ Speed test ${providerName}: ${latencyMs}ms (${quality})`);
+      return result;
+    } catch (err) {
+      const result = { latencyMs: -1, status: 'error', error: err.message, timestamp: Date.now() };
+      this.speedTestResults[providerName] = result;
+      return result;
+    }
+  }
+
+  /**
+   * 测试所有 Provider
+   */
+  async speedTestAll() {
+    const results = {};
+    for (const name of Object.keys(this.providers)) {
+      results[name] = await this.speedTest(name);
+    }
+    return results;
+  }
+
+  // ==================== Model 管理 ====================
+
   addModel(providerName, model) {
     const config = this._readConfig();
     const provider = config.models?.providers?.[providerName];
@@ -345,7 +502,6 @@ class ModelSwitcher {
 
     provider.models = provider.models || [];
     
-    // 检查重复
     if (provider.models.find(m => m.id === model.id)) {
       throw new Error(`Model "${model.id}" already exists in provider "${providerName}"`);
     }
@@ -361,7 +517,6 @@ class ModelSwitcher {
       maxTokens: model.maxTokens || 32000,
     });
 
-    // 加入 allowed models
     if (!config.agents) config.agents = { defaults: {} };
     if (!config.agents.defaults) config.agents.defaults = {};
     if (!config.agents.defaults.models) config.agents.defaults.models = {};
@@ -374,9 +529,6 @@ class ModelSwitcher {
     console.log(`✅ Model added: ${providerName}/${model.id}`);
   }
 
-  /**
-   * 从指定 Provider 删除模型
-   */
   removeModel(providerName, modelId) {
     const config = this._readConfig();
     const provider = config.models?.providers?.[providerName];
@@ -384,7 +536,6 @@ class ModelSwitcher {
 
     provider.models = (provider.models || []).filter(m => m.id !== modelId);
 
-    // 清理 allowed models
     if (config.agents?.defaults?.models) {
       delete config.agents.defaults.models[`${providerName}/${modelId}`];
     }
@@ -458,9 +609,7 @@ class ModelSwitcher {
   // ==================== 名称/颜色/图标 ====================
 
   _getShortName(modelId, modelName) {
-    // 优先使用配置中的 name
     if (modelName && modelName !== modelId) {
-      // 如果name太长（>15字符），做简化
       if (modelName.length <= 15) return modelName;
     }
     
@@ -491,7 +640,6 @@ class ModelSwitcher {
       if (modelId.includes(key)) return val;
     }
     
-    // 智能缩短：去掉日期后缀
     let short = modelId.replace(/-\d{8}$/, '');
     const parts = short.split('-');
     return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
@@ -509,6 +657,9 @@ class ModelSwitcher {
     if (id.includes('deepseek')) return '#4D6BFE';
     if (id.includes('qwen')) return '#6236FF';
     if (id.includes('llama')) return '#0467DF';
+    if (id.includes('kimi') || id.includes('k2')) return '#000000';
+    if (id.includes('glm')) return '#4361EE';
+    if (id.includes('minimax')) return '#FF4040';
     return '#FF6B6B';
   }
 
@@ -529,6 +680,9 @@ class ModelSwitcher {
     if (id.includes('deepseek')) return 'DS';
     if (id.includes('qwen')) return 'QW';
     if (id.includes('llama')) return 'LL';
+    if (id.includes('kimi') || id.includes('k2')) return 'K2';
+    if (id.includes('glm')) return 'GL';
+    if (id.includes('minimax')) return 'MM';
     return modelId.substring(0, 2).toUpperCase();
   }
 
@@ -582,7 +736,6 @@ class ModelSwitcher {
   }
 
   getTrayMenuItems() {
-    // 按 Provider 分组
     const groups = {};
     for (const model of this.models) {
       if (!groups[model.provider]) groups[model.provider] = [];
@@ -610,9 +763,6 @@ class ModelSwitcher {
     return `${this.currentModel.icon} ${this.currentModel.shortName}`;
   }
 
-  /**
-   * 获取完整状态（给前端设置面板用）
-   */
   getFullStatus() {
     return {
       providers: this.getProviders(),
@@ -621,6 +771,7 @@ class ModelSwitcher {
       currentIndex: this.currentIndex,
       presets: this.getPresets(),
       apiTypes: Object.entries(API_TYPES).map(([key, val]) => ({ key, ...val })),
+      speedTestResults: this.speedTestResults,
     };
   }
 }
