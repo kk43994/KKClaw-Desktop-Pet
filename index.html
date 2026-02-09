@@ -162,6 +162,16 @@
         box-shadow: 0 3px 12px rgba(0,0,0,0.2);
     }
     .tool-icon:active { transform: scale(0.9); }
+
+    /* 模型切换按钮 */
+    .model-switch-btn {
+        min-width: 26px;
+        padding: 0 4px;
+        border-radius: 13px;
+    }
+    .model-switch-btn:hover {
+        background: rgba(255,255,255,0.95);
+    }
     .tool-icon.active {
         background: rgba(255,255,255,1);
         box-shadow: 0 0 8px rgba(255,255,255,0.5), 0 2px 8px rgba(0,0,0,0.15);
@@ -257,6 +267,9 @@
         </div>
         <div class="tool-icon" id="btnScreenshot" title="截图" onclick="screenshot()">
             <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="tool-icon model-switch-btn" id="btnModelSwitch" title="切换模型" onclick="cycleModel()">
+            <span id="modelBadge" style="font-size:9px;font-weight:700;color:#666;user-select:none;">OP</span>
         </div>
     </div>
 
@@ -537,6 +550,56 @@ function toggleVoice() {
     if (ipcRenderer) ipcRenderer.invoke('set-voice-enabled', voiceOn);
     setMood('happy');
     setTimeout(() => setMood('idle'), 1500);
+}
+
+// ===== 模型切换 (CC Switch风格) =====
+const modelBadge = document.getElementById('modelBadge');
+let currentModelColor = '#E8A838';
+
+async function cycleModel() {
+    if (!ipcRenderer) return;
+    setMood('thinking');
+    const model = await ipcRenderer.invoke('model-next');
+    if (model) {
+        updateModelBadge(model);
+        // 球体闪变动画
+        flashModelSwitch(model.color);
+        setMood('happy');
+        setTimeout(() => setMood('idle'), 2000);
+    } else {
+        setMood('idle');
+    }
+}
+
+function updateModelBadge(model) {
+    if (!modelBadge || !model) return;
+    modelBadge.textContent = model.icon;
+    modelBadge.style.color = model.color;
+    currentModelColor = model.color;
+}
+
+function flashModelSwitch(color) {
+    // 球体快速闪变效果
+    const pet = document.getElementById('pet');
+    pet.style.transition = 'filter 0.15s';
+    pet.style.filter = `brightness(1.5) drop-shadow(0 0 15px ${color})`;
+    setTimeout(() => {
+        pet.style.filter = '';
+        pet.style.transition = '';
+    }, 400);
+}
+
+// 初始化时获取当前模型
+if (ipcRenderer) {
+    ipcRenderer.invoke('model-current').then(model => {
+        if (model) updateModelBadge(model);
+    });
+    
+    // 监听模型变更事件（来自托盘菜单切换）
+    ipcRenderer.on('model-changed', (e, model) => {
+        updateModelBadge(model);
+        flashModelSwitch(model.color);
+    });
 }
 
 async function screenshot() {

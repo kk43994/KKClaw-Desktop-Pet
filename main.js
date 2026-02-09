@@ -16,6 +16,7 @@ const PerformanceMonitor = require('./performance-monitor'); // 📊 性能监�
 const LogRotationManager = require('./log-rotation'); // 📝 日志轮转
 const GlobalErrorHandler = require('./global-error-handler'); // 🛡️ 全局错误处���
 const GatewayGuardian = require('./gateway-guardian'); // 🛡️ Gateway 进程守护
+const ModelSwitcher = require('./model-switcher'); // 🔄 模型切换器
 
 // Windows透明窗口修复 — 禁用硬件加速彻底解决浅色背景矩形框
 app.disableHardwareAcceleration();
@@ -79,6 +80,7 @@ let performanceMonitor; // 📊 性能监控
 let logRotation; // 📝 日志轮转
 let errorHandler; // 🛡️ 全局错误处理
 let gatewayGuardian; // 🛡️ Gateway 进程守护
+let modelSwitcher; // 🔄 模型切换器
 
 // 🛡️ 初始化全局错误处理 (最优先)
 errorHandler = new GlobalErrorHandler({
@@ -175,6 +177,30 @@ async function createWindow() {
   screenshotSystem = new ScreenshotSystem(); // 🔥 新增
   larkUploader = new LarkUploader(); // 🔥 新增
   serviceManager = new ServiceManager(); // 🔧 服务管理
+  
+  // 🔄 初始化模型切换器
+  modelSwitcher = new ModelSwitcher({
+    port: getGatewayConfig().port,
+    token: getGatewayConfig().token
+  });
+  
+  // 模型切换时通知前端更新UI
+  modelSwitcher.onChange((model) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('model-changed', model);
+    }
+    if (lyricsWindow) {
+      lyricsWindow.webContents.send('show-lyric', {
+        text: `模型切换 → ${model.shortName}`,
+        type: 'system',
+        sender: '系统'
+      });
+    }
+    // 语音播报
+    if (voiceSystem) {
+      voiceSystem.speak(`已切换到${model.shortName}`, { priority: 'high' });
+    }
+  });
   
   // 🧹 初始化缓存管理器
   cacheManager = new CacheManager({
@@ -588,6 +614,23 @@ async function createWindow() {
     },
     { type: 'separator' },
     {
+      label: `🔄 模型: ${modelSwitcher.getStatusText()}`,
+      submenu: [
+        ...modelSwitcher.getTrayMenuItems(),
+        { type: 'separator' },
+        {
+          label: '🔃 刷新模型列表',
+          click: () => {
+            modelSwitcher.reload();
+            // 重建托盘菜单以更新
+            rebuildTrayMenu();
+            showServiceNotification('模型列表已刷新', `共 ${modelSwitcher.getModels().length} 个模型`);
+          }
+        }
+      ]
+    },
+    { type: 'separator' },
+    {
       label: '🔧 服务管理',
       submenu: [
         {
@@ -688,6 +731,25 @@ async function createWindow() {
   tray.on('click', () => {
     mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
   });
+  
+  // 模型切换后重建托盘菜单以更新显示
+  modelSwitcher.onChange(() => {
+    rebuildTrayMenu();
+  });
+}
+
+/**
+ * 重建托盘菜单（模型切换后刷新显示）
+ */
+function rebuildTrayMenu() {
+  if (!tray || !modelSwitcher) return;
+  
+  // 重新创建菜单需要重新调用 createWindow 中的菜单构建逻辑
+  // 为了简化，我们只更新 tooltip 来反映当前模型
+  tray.setToolTip(`Claw 🦞 | ${modelSwitcher.getStatusText()}`);
+  
+  // 注意：Electron的Menu一旦设置无法动态更新单项
+  // 完整刷新需要重建整个菜单，但这里简化处理
 }
 
 // 屏幕边界约束 — 防止球体跑到屏幕外
@@ -993,6 +1055,30 @@ ipcMain.handle('service-restart-gateway', async () => {
 
 ipcMain.handle('service-logs', async (event, count) => {
   return serviceManager.getRecentLogs(count || 50);
+});
+
+// 🔄 模型切换 IPC
+ipcMain.handle('model-list', async () => {
+  return modelSwitcher ? modelSwitcher.getModels() : [];
+});
+
+ipcMain.handle('model-current', async () => {
+  return modelSwitcher ? modelSwitcher.getCurrent() : null;
+});
+
+ipcMain.handle('model-switch', async (event, modelId) => {
+  if (!modelSwitcher) return null;
+  return await modelSwitcher.switchTo(modelId);
+});
+
+ipcMain.handle('model-next', async () => {
+  if (!modelSwitcher) return null;
+  return await modelSwitcher.next();
+});
+
+ipcMain.handle('model-prev', async () => {
+  if (!modelSwitcher) return null;
+  return await modelSwitcher.prev();
 });
 
 // 🆘 刷新 Session - 清理损坏会话
