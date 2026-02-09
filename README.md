@@ -3,6 +3,7 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![CI](https://github.com/kk43994/claw-desktop-pet/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Stability](https://img.shields.io/badge/stability-7×24-success)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
