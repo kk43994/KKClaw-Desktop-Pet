@@ -899,8 +899,24 @@
                     <div class="demo-particles" id="demoParticles"></div>
                 </div>
                 <div class="demo-label">
-                    <span class="en-inline">Click me!</span>
-                    <span class="zh-inline">点我试试!</span>
+                    <span class="en-inline">Try different moods!</span>
+                    <span class="zh-inline">试试不同情绪!</span>
+                </div>
+                
+                <!-- Mood Control Buttons -->
+                <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; max-width: 400px;">
+                    <button onclick="setDemoMood('idle')" style="padding: 0.4rem 0.8rem; background: rgba(255,107,74,0.1); border: 1px solid rgba(255,107,74,0.3); border-radius: 20px; color: var(--primary); font-size: 0.8rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,107,74,0.2)'" onmouseout="this.style.background='rgba(255,107,74,0.1)'">
+                        <span class="en-inline">😌 Idle</span><span class="zh-inline">😌 待机</span>
+                    </button>
+                    <button onclick="setDemoMood('happy')" style="padding: 0.4rem 0.8rem; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 20px; color: #FBBF24; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(251,191,36,0.2)'" onmouseout="this.style.background='rgba(251,191,36,0.1)'">
+                        <span class="en-inline">😊 Happy</span><span class="zh-inline">😊 开心</span>
+                    </button>
+                    <button onclick="setDemoMood('thinking')" style="padding: 0.4rem 0.8rem; background: rgba(107,138,255,0.1); border: 1px solid rgba(107,138,255,0.3); border-radius: 20px; color: #6B8AFF; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(107,138,255,0.2)'" onmouseout="this.style.background='rgba(107,138,255,0.1)'">
+                        <span class="en-inline">🤔 Thinking</span><span class="zh-inline">🤔 思考</span>
+                    </button>
+                    <button onclick="setDemoMood('sleepy')" style="padding: 0.4rem 0.8rem; background: rgba(136,136,136,0.1); border: 1px solid rgba(136,136,136,0.3); border-radius: 20px; color: #888; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(136,136,136,0.2)'" onmouseout="this.style.background='rgba(136,136,136,0.1)'">
+                        <span class="en-inline">😴 Sleepy</span><span class="zh-inline">😴 困了</span>
+                    </button>
                 </div>
             </div>
 
@@ -1697,4 +1713,5 @@ node kkclaw-hotswitch.js --restart</code></pre>
     </style>
 </body>
 </html>
+
 
