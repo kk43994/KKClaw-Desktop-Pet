@@ -308,10 +308,10 @@ Edge TTS (兜底)
 
 ```bash
 # 同步当前激活provider到OpenClaw
-node C:\Users\zhouk\openclaw-data\kkclaw-hotswitch.js
+node kkclaw-hotswitch.js
 
 # 同步并自动重启Gateway（推荐）
-node C:\Users\zhouk\openclaw-data\kkclaw-hotswitch.js --restart
+node kkclaw-hotswitch.js --restart
 ```
 
 #### 配置修复工具
@@ -319,7 +319,7 @@ node C:\Users\zhouk\openclaw-data\kkclaw-hotswitch.js --restart
 
 ```bash
 # 自动清理重复的provider key（大小写冲突）
-node C:\Users\zhouk\openclaw-data\fix-openclaw-config.js
+node fix-openclaw-config.js
 ```
 
 #### 常见问题
@@ -514,10 +514,10 @@ openclaw config
 
 ```bash
 # 同步当前激活provider到OpenClaw
-node C:\Users\zhouk\openclaw-data\kkclaw-hotswitch.js
+node kkclaw-hotswitch.js
 
 # 同步并自动重启Gateway（推荐）
-node C:\Users\zhouk\openclaw-data\kkclaw-hotswitch.js --restart
+node kkclaw-hotswitch.js --restart
 ```
 
 #### 常见问题
@@ -526,7 +526,7 @@ node C:\Users\zhouk\openclaw-data\kkclaw-hotswitch.js --restart
 
 A: 可能是配置文件有重复key，运行修复脚本:
 ```bash
-node C:\Users\zhouk\openclaw-data\fix-openclaw-config.js
+node fix-openclaw-config.js
 ```
 
 **Q: PowerShell报错 "&& is not a valid statement separator"？**
