@@ -899,9 +899,81 @@
                     <div class="demo-particles" id="demoParticles"></div>
                 </div>
                 
-                <!-- Mood System Image -->
-                <div style="margin-top: 2.5rem; text-align: center;">
-                    <img src="images/mood-system.jpg" alt="7种情绪状态" style="max-width: 100%; height: auto; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+                <!-- 7 Mood Spheres - Code version -->
+                <div style="margin-top: 3rem; text-align: center;">
+                    <div style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+                        <span class="en-inline">🎨 7 Emotional States</span>
+                        <span class="zh-inline">🎨 7种情绪状态</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem;">
+                        <span class="en-inline">Click any mood icon to see the ball change color.</span>
+                        <span class="zh-inline">点击情绪图标，即可实时查看球体的变化。</span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; max-width: 600px; margin: 0 auto;">
+                        <!-- Idle -->
+                        <div onclick="setDemoMood('idle')" style="cursor: pointer; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform=''">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,154,108,0.9), rgba(255,107,74,0.95), rgba(220,70,50,1)); box-shadow: 0 4px 16px rgba(255,107,74,0.4), inset 0 -2px 8px rgba(0,0,0,0.2); margin: 0 auto 0.5rem;"></div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">
+                                <div class="en-inline">Idle</div>
+                                <div class="zh-inline">闲置的</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Happy -->
+                        <div onclick="setDemoMood('happy')" style="cursor: pointer; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform=''">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,235,130,0.9), rgba(251,191,36,0.95), rgba(245,158,11,1)); box-shadow: 0 4px 16px rgba(251,191,36,0.4), inset 0 -2px 8px rgba(0,0,0,0.2); margin: 0 auto 0.5rem;"></div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">
+                                <div class="en-inline">Happy</div>
+                                <div class="zh-inline">快乐的</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Talking -->
+                        <div onclick="setDemoMood('talking')" style="cursor: pointer; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform=''">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,154,200,0.9), rgba(255,107,157,0.95), rgba(236,72,153,1)); box-shadow: 0 4px 16px rgba(255,107,157,0.4), inset 0 -2px 8px rgba(0,0,0,0.2); margin: 0 auto 0.5rem;"></div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">
+                                <div class="en-inline">Talking</div>
+                                <div class="zh-inline">说</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Thinking -->
+                        <div onclick="setDemoMood('thinking')" style="cursor: pointer; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform=''">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(167,139,250,0.9), rgba(124,88,237,0.95), rgba(109,40,217,1)); box-shadow: 0 4px 16px rgba(124,88,237,0.4), inset 0 -2px 8px rgba(0,0,0,0.2); margin: 0 auto 0.5rem;"></div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">
+                                <div class="en-inline">Thinking</div>
+                                <div class="zh-inline">思维</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sleepy -->
+                        <div onclick="setDemoMood('sleepy')" style="cursor: pointer; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform=''">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(200,180,170,0.9), rgba(160,130,120,0.95), rgba(140,110,100,1)); box-shadow: 0 4px 16px rgba(160,130,120,0.4), inset 0 -2px 8px rgba(0,0,0,0.2); margin: 0 auto 0.5rem;"></div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">
+                                <div class="en-inline">Sleepy</div>
+                                <div class="zh-inline">困</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Surprised -->
+                        <div onclick="setDemoMood('surprised')" style="cursor: pointer; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform=''">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,200,100,0.9), rgba(255,165,0,0.95), rgba(237,137,0,1)); box-shadow: 0 4px 16px rgba(255,165,0,0.4), inset 0 -2px 8px rgba(0,0,0,0.2); margin: 0 auto 0.5rem;"></div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">
+                                <div class="en-inline">Surprised</div>
+                                <div class="zh-inline">惊讶</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Offline -->
+                        <div onclick="setDemoMood('offline')" style="cursor: pointer; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform=''">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(180,180,180,0.9), rgba(140,140,140,0.95), rgba(100,100,100,1)); box-shadow: 0 4px 16px rgba(128,128,128,0.4), inset 0 -2px 8px rgba(0,0,0,0.2); margin: 0 auto 0.5rem;"></div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">
+                                <div class="en-inline">Offline</div>
+                                <div class="zh-inline">离线</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

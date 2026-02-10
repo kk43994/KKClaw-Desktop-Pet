@@ -389,6 +389,31 @@ const EXPR = {
     ),
     talking:    () => setEyes({ w:10, h:17, br:'5px' }),
     talkBig:    () => setEyes({ w:12, h:20, br:'6px' }),
+    lookUp:     () => setEyes({ w:11, h:19, br:'6px', ty:-5 }),
+    lookDown:   () => setEyes({ w:11, h:15, br:'6px', ty:4 }),
+    dizzy:      () => setEyes(
+        { w:10, h:10, br:'5px', rot:25, tx:-2 },
+        { w:10, h:10, br:'5px', rot:-25, tx:2 }
+    ),
+    angry:      () => setEyes(
+        { w:12, h:14, br:'3px 6px 6px 3px', ty:-2, rot:-12 },
+        { w:12, h:14, br:'6px 3px 3px 6px', ty:-2, rot:12 }
+    ),
+    love:       () => setEyes({ w:14, h:13, br:'7px 1px 7px 1px', rot:45, sx:1.1 }),
+    squint:     () => setEyes({ w:12, h:6, br:'4px', ty:1 }),
+    cross:      () => setEyes(
+        { w:10, h:3, br:'2px', rot:30 },
+        { w:10, h:3, br:'2px', rot:-30 }
+    ),
+    smug:       () => setEyes(
+        { w:11, h:7, br:'6px 6px 3px 3px', ty:1 },
+        { w:9, h:15, br:'5px', tx:3 }
+    ),
+    confused:   () => setEyes(
+        { w:11, h:19, br:'6px', ty:-2 },
+        { w:9, h:12, br:'5px', ty:2, rot:15 }
+    ),
+    dead:       () => setEyes({ w:10, h:3, br:'2px', ty:3 }),
 };
 
 // ===== 鼠标跟随 =====
@@ -731,6 +756,143 @@ const idleActs = [
     () => {
         EXPR.sad();
         setTimeout(() => { EXPR.drowsy(); setTimeout(() => { EXPR.normal(); setTimeout(() => EXPR.happy(), 200); setTimeout(() => EXPR.normal(), 700); }, 400); }, 600);
+    },
+    // 仰望天空
+    () => { EXPR.lookUp(); setTimeout(() => { EXPR.sparkle(); setTimeout(() => EXPR.normal(), 500); }, 800); },
+    // 低头沉思
+    () => { EXPR.lookDown(); setTimeout(() => { EXPR.thinking(); setTimeout(() => EXPR.normal(), 700); }, 500); },
+    // 头晕目眩
+    () => {
+        EXPR.dizzy();
+        const origScale = targetScale;
+        targetScale = 0.95;
+        setTimeout(() => { targetScale = 1.03; }, 200);
+        setTimeout(() => { targetScale = 0.97; }, 400);
+        setTimeout(() => { targetScale = origScale; EXPR.halfBlink(); }, 600);
+        setTimeout(() => EXPR.normal(), 900);
+    },
+    // 生气跺脚
+    () => {
+        EXPR.angry();
+        const origScale = targetScale;
+        targetScale = 1.05;
+        setTimeout(() => { targetScale = 0.95; }, 200);
+        setTimeout(() => { targetScale = 1.05; }, 400);
+        setTimeout(() => { targetScale = origScale; EXPR.hmm(); }, 600);
+        setTimeout(() => EXPR.normal(), 1000);
+    },
+    // 爱心眼
+    () => {
+        EXPR.love();
+        blushL.style.transition = 'background 0.3s ease'; blushR.style.transition = 'background 0.3s ease';
+        blushL.style.background = 'rgba(255,80,120,0.5)'; blushR.style.background = 'rgba(255,80,120,0.5)';
+        setTimeout(() => {
+            EXPR.superHappy();
+            blushL.style.transition = 'background 0.8s ease'; blushR.style.transition = 'background 0.8s ease';
+            blushL.style.background = ''; blushR.style.background = '';
+        }, 1000);
+        setTimeout(() => EXPR.normal(), 1500);
+    },
+    // 眯眼偷看
+    () => { EXPR.squint(); setTimeout(() => { EXPR.lookLeft(); setTimeout(() => { EXPR.squint(); setTimeout(() => EXPR.normal(), 300); }, 400); }, 500); },
+    // 翻白眼（看上→看下→闭眼）
+    () => { EXPR.lookUp(); setTimeout(() => { EXPR.lookDown(); setTimeout(() => { EXPR.blink(); setTimeout(() => EXPR.normal(), 200); }, 300); }, 300); },
+    // 得意脸
+    () => { EXPR.smug(); setTimeout(() => { EXPR.giggle(); setTimeout(() => EXPR.normal(), 600); }, 700); },
+    // 困惑歪头
+    () => { EXPR.confused(); setTimeout(() => { EXPR.curious(); setTimeout(() => EXPR.normal(), 500); }, 600); },
+    // 装死
+    () => {
+        EXPR.dead();
+        const origScale = targetScale;
+        targetScale = 0.85;
+        setTimeout(() => { EXPR.blink(); targetScale = 0.9; }, 1500);
+        setTimeout(() => { EXPR.surprised(); targetScale = origScale; }, 1800);
+        setTimeout(() => EXPR.normal(), 2200);
+    },
+    // 左看 → 上看 → 右看（环顾四周）
+    () => {
+        EXPR.lookLeft();
+        setTimeout(() => EXPR.lookUp(), 350);
+        setTimeout(() => EXPR.lookRight(), 700);
+        setTimeout(() => EXPR.lookDown(), 1050);
+        setTimeout(() => EXPR.normal(), 1400);
+    },
+    // 开心蹦跶
+    () => {
+        EXPR.superHappy();
+        const origScale = targetScale;
+        targetScale = 1.1;
+        setTimeout(() => { targetScale = 0.93; }, 200);
+        setTimeout(() => { targetScale = 1.08; EXPR.giggle(); }, 400);
+        setTimeout(() => { targetScale = 0.95; }, 600);
+        setTimeout(() => { targetScale = origScale; EXPR.happy(); }, 800);
+        setTimeout(() => EXPR.normal(), 1200);
+    },
+    // 慢眨 → 半睁 → 正常（懒洋洋）
+    () => {
+        EXPR.halfBlink();
+        setTimeout(() => EXPR.sleepy(), 500);
+        setTimeout(() => EXPR.halfBlink(), 1200);
+        setTimeout(() => EXPR.drowsy(), 1700);
+        setTimeout(() => EXPR.normal(), 2200);
+    },
+    // 双眨确认
+    () => {
+        EXPR.blink(); setTimeout(() => EXPR.normal(), 80);
+        setTimeout(() => EXPR.blink(), 400); setTimeout(() => EXPR.normal(), 480);
+    },
+    // 怒 → 忍住 → 深呼吸
+    () => {
+        EXPR.angry();
+        setTimeout(() => EXPR.squint(), 500);
+        setTimeout(() => { EXPR.blink(); const origScale = targetScale; targetScale = 1.06; setTimeout(() => { targetScale = origScale; }, 400); }, 800);
+        setTimeout(() => EXPR.normal(), 1400);
+    },
+    // 坏笑
+    () => {
+        EXPR.smug();
+        blushL.style.transition = 'background 0.3s ease'; blushR.style.transition = 'background 0.3s ease';
+        blushL.style.background = 'rgba(255,120,80,0.3)'; blushR.style.background = 'rgba(255,120,80,0.3)';
+        setTimeout(() => { EXPR.giggle(); }, 600);
+        setTimeout(() => {
+            EXPR.normal();
+            blushL.style.transition = 'background 0.6s ease'; blushR.style.transition = 'background 0.6s ease';
+            blushL.style.background = ''; blushR.style.background = '';
+        }, 1200);
+    },
+    // 困惑 → 顿悟 → 开心
+    () => {
+        EXPR.confused();
+        setTimeout(() => EXPR.thinking(), 500);
+        setTimeout(() => { EXPR.sparkle(); const origScale = targetScale; targetScale = 1.05; setTimeout(() => { targetScale = origScale; }, 300); }, 1000);
+        setTimeout(() => { EXPR.superHappy(); }, 1300);
+        setTimeout(() => EXPR.normal(), 1800);
+    },
+    // 轻轻摇头
+    () => {
+        EXPR.squint();
+        EXPR.lookLeft();
+        setTimeout(() => EXPR.lookRight(), 250);
+        setTimeout(() => EXPR.lookLeft(), 500);
+        setTimeout(() => { EXPR.normal(); }, 750);
+    },
+    // 向上蹦（弹跳）
+    () => {
+        const origScale = targetScale;
+        EXPR.happy();
+        targetScale = 0.9;
+        setTimeout(() => { targetScale = 1.12; }, 150);
+        setTimeout(() => { targetScale = 0.93; }, 350);
+        setTimeout(() => { targetScale = 1.05; EXPR.giggle(); }, 500);
+        setTimeout(() => { targetScale = origScale; EXPR.normal(); }, 700);
+    },
+    // 看到好吃的（眼睛放大 → 爱心）
+    () => {
+        EXPR.wow();
+        setTimeout(() => EXPR.love(), 400);
+        setTimeout(() => { EXPR.superHappy(); blushL.style.transition = 'background 0.2s'; blushR.style.transition = 'background 0.2s'; blushL.style.background = 'rgba(255,100,100,0.4)'; blushR.style.background = 'rgba(255,100,100,0.4)'; }, 800);
+        setTimeout(() => { EXPR.normal(); blushL.style.transition = 'background 0.6s'; blushR.style.transition = 'background 0.6s'; blushL.style.background = ''; blushR.style.background = ''; }, 1400);
     },
 ];
 setInterval(() => {
