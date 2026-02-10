@@ -135,6 +135,8 @@ class GatewayGuardian extends EventEmitter {
 
             return { success: true };
         } catch (err) {
+            // 失败也计入重启历史，防止无限重试
+            this.restartHistory.push(Date.now());
             console.error('[Guardian] ❌ 重启失败:', err.message);
             this.emit('restart-failed', { error: err.message });
             return { success: false, error: err.message };
@@ -152,6 +154,12 @@ class GatewayGuardian extends EventEmitter {
                 'dist',
                 'index.js'
             );
+
+            const fs = require('fs');
+            if (!fs.existsSync(openclawPath)) {
+                reject(new Error(`openclaw 不存在: ${openclawPath}`));
+                return;
+            }
 
             const child = spawn('node', [openclawPath, 'gateway', '--port', '18789'], {
                 detached: true,

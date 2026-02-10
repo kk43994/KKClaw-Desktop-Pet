@@ -180,58 +180,6 @@ print('SUCCESS')
             .substring(0, 50);
     }
 
-    /**
-     * 获取最近的截图
-     * @param {number} count - 获取数量
-     */
-    async getRecentScreenshots(count = 5) {
-        try {
-            const files = await fs.readdir(this.screenshotDir);
-            const screenshots = files
-                .filter(f => f.endsWith('.png'))
-                .map(f => ({
-                    name: f,
-                    path: path.join(this.screenshotDir, f),
-                    timestamp: parseInt(f.split('_')[0])
-                }))
-                .sort((a, b) => b.timestamp - a.timestamp)
-                .slice(0, count);
-
-            return screenshots;
-        } catch (err) {
-            console.error('❌ 获取截图列表失败:', err);
-            return [];
-        }
-    }
-
-    /**
-     * 清理旧截图 (保留最近N张)
-     * @param {number} keep - 保留数量
-     */
-    async cleanupOld(keep = 20) {
-        try {
-            const files = await fs.readdir(this.screenshotDir);
-            const screenshots = files
-                .filter(f => f.endsWith('.png'))
-                .map(f => ({
-                    name: f,
-                    path: path.join(this.screenshotDir, f),
-                    timestamp: parseInt(f.split('_')[0])
-                }))
-                .sort((a, b) => b.timestamp - a.timestamp);
-
-            // 删除超出保留数量的截图
-            const toDelete = screenshots.slice(keep);
-            for (const file of toDelete) {
-                await fs.unlink(file.path);
-                console.log('🗑️ 删除旧截图:', file.name);
-            }
-
-            console.log(`✅ 清理完成,保留 ${keep} 张截图`);
-        } catch (err) {
-            console.error('❌ 清理截图失败:', err);
-        }
-    }
 }
 
 module.exports = ScreenshotSystem;

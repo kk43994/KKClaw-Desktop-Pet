@@ -14,7 +14,7 @@ const CacheManager = require('./cache-manager'); // 🧹 缓存管理
 const { ElectronRestartHandler } = require('./auto-restart'); // 🔄 自动重启
 const PerformanceMonitor = require('./performance-monitor'); // 📊 性能监控
 const LogRotationManager = require('./log-rotation'); // 📝 日志轮转
-const GlobalErrorHandler = require('./global-error-handler'); // 🛡️ 全局错误处���
+const GlobalErrorHandler = require('./global-error-handler'); // 🛡️ 全局错误处理
 const GatewayGuardian = require('./gateway-guardian'); // 🛡️ Gateway 进程守护
 const ModelSwitcher = require('./model-switcher'); // 🔄 模型切换器
 
@@ -189,6 +189,9 @@ async function createWindow() {
     if (mainWindow) {
       mainWindow.webContents.send('model-changed', model);
     }
+    if (modelSettingsWindow && !modelSettingsWindow.isDestroyed()) {
+      modelSettingsWindow.webContents.send('model-changed', model);
+    }
     if (lyricsWindow) {
       lyricsWindow.webContents.send('show-lyric', {
         text: `模型切换 → ${model.shortName}`,
@@ -219,11 +222,6 @@ async function createWindow() {
         });
       } else if (voiceSystem && result.freedMB > 0) {
         voiceSystem.speak(`完成例行缓存清理`, { priority: 'low' });
-      }
-      
-      // 通知桌面
-      if (mainWindow) {
-        mainWindow.webContents.send('cache-cleaned', result);
       }
       
       // 记录日志
@@ -355,8 +353,6 @@ async function createWindow() {
               isRecovering = false;
             }, 60000); // 1分钟后允许再次尝试
           }
-
-          isRecovering = false;
         }
       }
     } catch (err) {
@@ -367,10 +363,6 @@ async function createWindow() {
   // 监听服务状态变化
   serviceManager.on('status-change', (change) => {
     console.log(`🔧 服务状态变化: ${change.service} ${change.previousStatus} -> ${change.currentStatus}`);
-
-    if (mainWindow) {
-      mainWindow.webContents.send('service-status', serviceManager.getStatus());
-    }
 
     // 更新托盘图标提示
     updateTrayTooltip();
@@ -398,12 +390,6 @@ async function createWindow() {
           }
         }, 2000);
       }
-    }
-  });
-
-  serviceManager.on('log', (entry) => {
-    if (mainWindow) {
-      mainWindow.webContents.send('service-log', entry);
     }
   });
 
@@ -505,28 +491,7 @@ async function createWindow() {
       }
     }
   });
-  
-  messageSync.on('agent_response', (response) => {
-    if (mainWindow) {
-      mainWindow.webContents.send('agent-response', response);
-      if (lyricsWindow) {
-        lyricsWindow.webContents.send('show-lyric', {
-          text: response.content, type: 'agent', sender: '小K'
-        });
-      }
-      if (response.content) {
-        voiceSystem.speak(response.content.substring(0, 200));
-        workLogger.log('message', `我回复: ${response.content}`);
-      }
-    }
-  });
-  
-  messageSync.on('status_change', (status) => {
-    if (mainWindow) {
-      mainWindow.webContents.send('status-update', status);
-    }
-  });
-  
+
   mainWindow = new BrowserWindow({
     width: 200,
     height: 260,
@@ -556,7 +521,6 @@ async function createWindow() {
 
   // 歌词窗口 — 桌面歌词效果
   const petPos = mainWindow.getPosition();
-  const petSize = mainWindow.getSize();
   lyricsWindow = new BrowserWindow({
     width: 400,
     height: 100,
@@ -746,6 +710,13 @@ async function createWindow() {
   // 模型切换后重建托盘菜单以更新显示
   modelSwitcher.onChange(() => {
     rebuildTrayMenu();
+  });
+
+  // 监控日志实时推送到设置窗口
+  modelSwitcher.switchLog.onLog((entry) => {
+    if (modelSettingsWindow && !modelSettingsWindow.isDestroyed()) {
+      modelSettingsWindow.webContents.send('switch-log-entry', entry);
+    }
   });
 }
 
@@ -938,35 +909,6 @@ ipcMain.on('drag-pet', (event, { x, y, offsetX, offsetY }) => {
   petConfig.set('position', { x: newX, y: newY });
 });
 
-ipcMain.on('move-window', (event, { x, y }) => {
-  if (!mainWindow) return;
-  const [currentX, currentY] = mainWindow.getPosition();
-  const rawX = currentX + x;
-  const rawY = currentY + y;
-  const { x: newX, y: newY } = clampToScreen(rawX, rawY);
-  mainWindow.setPosition(newX, newY);
-  if (lyricsWindow) {
-    lyricsWindow.setPosition(newX - 100, newY - 110);
-  }
-  petConfig.set('position', { x: newX, y: newY });
-});
-
-ipcMain.on('quit-app', () => {
-  app.quit();
-});
-
-// 模型设置窗口控制
-ipcMain.on('model-settings-minimize', () => {
-  if (modelSettingsWindow && !modelSettingsWindow.isDestroyed()) {
-    modelSettingsWindow.minimize();
-  }
-});
-ipcMain.on('model-settings-close', () => {
-  if (modelSettingsWindow && !modelSettingsWindow.isDestroyed()) {
-    modelSettingsWindow.close();
-  }
-});
-
 // 三击查看历史消息
 ipcMain.handle('show-history', async () => {
   try {
@@ -1014,19 +956,7 @@ ipcMain.handle('openclaw-status', async () => {
   return { connected, status };
 });
 
-// 语音系统
-ipcMain.handle('voice-speak', async (event, text, options = {}) => {
-  workLogger.logVoice(text, 'speaking');
-  await voiceSystem.speak(text, options);
-  return true;
-});
-
-ipcMain.handle('voice-stop', async () => {
-  voiceSystem.stop();
-  return true;
-});
-
-// 🎙️ 语音控制增强
+// 🎙️ 语音控制
 ipcMain.handle('set-voice-enabled', async (event, enabled) => {
   voiceSystem.toggle(enabled);
   petConfig.set('voiceEnabled', enabled);
@@ -1034,59 +964,13 @@ ipcMain.handle('set-voice-enabled', async (event, enabled) => {
   return true;
 });
 
-ipcMain.handle('voice-stats', async () => {
-  return voiceSystem.getStats();
-});
-
-ipcMain.handle('voice-set-mode', async (event, mode) => {
-  voiceSystem.setMode(mode);
-  return true;
-});
-
-ipcMain.handle('voice-clear-queue', async () => {
-  voiceSystem.clearQueue();
-  return true;
-});
-
-// 工作日志
-ipcMain.handle('get-today-log', async () => {
-  return await workLogger.getTodayLog();
-});
-
-ipcMain.handle('log-event', async (event, type, content, metadata) => {
-  return await workLogger.log(type, content, metadata);
-});
-
-// 消息同步状态
-ipcMain.handle('sync-status', async () => {
-  return {
-    connected: messageSync.isConnected,
-    recentMessages: messageSync.getRecentMessages(5)
-  };
-});
-
-// 测试: 模拟飞书消息
-ipcMain.handle('simulate-message', async (event, sender, content) => {
-  messageSync.simulateMessage(sender, content);
-  workLogger.log('message', `[模拟] ${sender}: ${content}`);
-  return true;
-});
 
 // 🔥 截图系统
 ipcMain.handle('take-screenshot', async (event, reason = 'manual') => {
   try {
     workLogger.log('action', `📸 开始截图: ${reason}`);
     const filepath = await screenshotSystem.captureScreen(reason);
-    
-    // 通知桌面显示
-    if (mainWindow) {
-      mainWindow.webContents.send('screenshot-taken', {
-        filepath,
-        reason,
-        timestamp: Date.now()
-      });
-    }
-    
+
     // 上传到飞书
     await larkUploader.uploadToLark(filepath, `📸 ${reason}`);
     
@@ -1104,80 +988,6 @@ ipcMain.handle('take-screenshot', async (event, reason = 'manual') => {
       error: err.message
     };
   }
-});
-
-// 获取最近截图
-ipcMain.handle('get-recent-screenshots', async (event, count = 5) => {
-  return await screenshotSystem.getRecentScreenshots(count);
-});
-
-// 清理旧截图
-ipcMain.handle('cleanup-screenshots', async (event, keep = 20) => {
-  await screenshotSystem.cleanupOld(keep);
-  return true;
-});
-
-// 🧹 缓存管理 IPC
-ipcMain.handle('cache-cleanup', async () => {
-  return await cacheManager.triggerCleanup();
-});
-
-ipcMain.handle('cache-stats', async () => {
-  return cacheManager.getStats();
-});
-
-// 🔄 重启管理 IPC
-ipcMain.handle('restart-stats', async () => {
-  return restartHandler.getStats();
-});
-
-ipcMain.handle('force-restart', async (event, reason = 'manual') => {
-  console.log(`🔄 手动触发重启: ${reason}`);
-  restartHandler.restart(reason);
-  return true;
-});
-
-// 📊 性能监控 IPC
-ipcMain.handle('performance-stats', async () => {
-  return performanceMonitor.getCurrentStats();
-});
-
-ipcMain.handle('performance-history', async (event, minutes = 60) => {
-  return performanceMonitor.getHistoryData(minutes);
-});
-
-ipcMain.handle('performance-report', async () => {
-  return await performanceMonitor.generateReport();
-});
-
-ipcMain.handle('health-check', async () => {
-  return performanceMonitor.calculateHealthScore();
-});
-
-// 📝 日志管理 IPC
-ipcMain.handle('log-stats', async () => {
-  return await logRotation.getStats();
-});
-
-ipcMain.handle('log-list', async (event, count = 10) => {
-  return await logRotation.listRecentLogs(count);
-});
-
-ipcMain.handle('log-read', async (event, filename, lines = 100) => {
-  return await logRotation.readLog(filename, lines);
-});
-
-ipcMain.handle('log-rotate', async () => {
-  return await logRotation.rotate();
-});
-
-// 🛡️ 错误处理 IPC
-ipcMain.handle('error-stats', async () => {
-  return errorHandler.getStats();
-});
-
-ipcMain.handle('error-history', async (event, count = 10) => {
-  return errorHandler.getErrorHistory(count);
 });
 
 app.whenReady().then(createWindow);
@@ -1199,32 +1009,7 @@ function updateTrayTooltip() {
   tray.setToolTip(`Claw 🦞 | Gateway: ${gatewayStatus}`);
 }
 
-// 🔧 服务管理 IPC
-ipcMain.handle('service-status', async () => {
-  return serviceManager.getStatus();
-});
-
-ipcMain.handle('service-start-gateway', async () => {
-  return await serviceManager.startGateway();
-});
-
-ipcMain.handle('service-stop-gateway', async () => {
-  return await serviceManager.stopGateway();
-});
-
-ipcMain.handle('service-restart-gateway', async () => {
-  return await serviceManager.restartGateway();
-});
-
-ipcMain.handle('service-logs', async (event, count) => {
-  return serviceManager.getRecentLogs(count || 50);
-});
-
 // 🔄 模型切换 IPC
-ipcMain.handle('model-list', async () => {
-  return modelSwitcher ? modelSwitcher.getModels() : [];
-});
-
 ipcMain.handle('model-current', async () => {
   return modelSwitcher ? modelSwitcher.getCurrent() : null;
 });
@@ -1244,18 +1029,9 @@ ipcMain.handle('model-next', async () => {
   return await modelSwitcher.next();
 });
 
-ipcMain.handle('model-prev', async () => {
-  if (!modelSwitcher) return null;
-  return await modelSwitcher.prev();
-});
-
 // 🔄 Provider 管理 IPC
 ipcMain.handle('model-full-status', async () => {
   return modelSwitcher ? modelSwitcher.getFullStatus() : null;
-});
-
-ipcMain.handle('model-providers', async () => {
-  return modelSwitcher ? modelSwitcher.getProviders() : [];
 });
 
 ipcMain.handle('model-presets', async () => {
@@ -1338,63 +1114,18 @@ ipcMain.handle('model-fetch-models', async (event, providerName) => {
   return await modelSwitcher.fetchModels(providerName);
 });
 
-
-// 📥 从 CC Switch 导入
-ipcMain.handle('import-from-ccswitch', async () => {
-  const path = require('path');
-  const HOME = process.env.HOME || process.env.USERPROFILE;
-  const DB_PATH = path.join(HOME, '.cc-switch', 'cc-switch.db');
-
-  try {
-    if (!modelSwitcher) return { error: 'Model switcher not initialized' };
-
-    const sqlite3 = require('sqlite3').verbose();
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-
-    const providers = await new Promise((resolve, reject) => {
-      db.all(
-        `SELECT id, name, settings_config FROM providers WHERE app_type = 'claude' AND id != 'default'`,
-        [],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
-      );
-    });
-
-    db.close();
-
-    let importCount = 0;
-    for (const row of providers) {
-      try {
-        const settings = JSON.parse(row.settings_config);
-        const env = settings.env || {};
-        const baseUrl = env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
-        const apiKey = env.ANTHROPIC_AUTH_TOKEN || '';
-
-        // 生成标准模型列表
-        const models = [
-          { id: 'claude-opus-4-6', name: 'Claude Opus 4.6' },
-          { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
-          { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' }
-        ];
-
-        modelSwitcher.addProvider(row.name, { baseUrl, apiKey, api: 'anthropic-messages', models });
-        importCount++;
-        console.log(`✓ 导入: ${row.name}`);
-      } catch (err) {
-        console.error(`✗ 导入失败 ${row.name}:`, err.message);
-      }
-    }
-
-    console.log(`✅ 从 CC Switch 导入了 ${importCount} 个服务商`);
-    return { success: true, providersCount: importCount };
-
-  } catch (err) {
-    console.error('❌ 导入失败:', err);
-    return { success: false, error: err.message };
-  }
+// 🔍 KKClaw Switch 监控日志 IPC
+ipcMain.handle('switch-log-list', async (event, count, levelFilter) => {
+  if (!modelSwitcher?.switchLog) return [];
+  return modelSwitcher.switchLog.getRecent(count || 100, levelFilter || null);
 });
+
+ipcMain.handle('switch-log-clear', async () => {
+  if (!modelSwitcher?.switchLog) return false;
+  modelSwitcher.switchLog.clear();
+  return true;
+});
+
 
 // 🆘 刷新 Session - 清理损坏会话
 ipcMain.handle('refresh-session', async () => {
@@ -1467,6 +1198,7 @@ app.on('before-quit', () => {
     lyricsWindow.destroy();
     lyricsWindow = null;
   }
+
   // 清理资源
   if (gatewayGuardian) {
     gatewayGuardian.stop();

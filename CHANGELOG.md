@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project loosely follows semantic versioning.
 
 
+## [2.0.3] - 2026-02-10
+
+### 🎨 Enhanced
+- **Silky smooth color transitions**: Upgraded mood color changes from basic `ease` to layered `cubic-bezier` curves
+- **Tri-layer gradient timing**: Inner fluid (2.2s), blob1 (1.8s), blob2 (2.6s) create visual depth
+- **Blush & opacity transitions**: Happy-mode blush and sleepy-mode opacity now fade smoothly (1.5s/2.5s)
+- **Material Design easing**: All transitions use `cubic-bezier(0.4, 0.0, 0.2, 1)` for natural motion
+
+### 🔧 Added
+- **KKClaw Switch Auto-Sync Watcher** (`kkclaw-auto-sync.js`): Monitors `~/.cc-switch/cc-switch.db` every 2s, auto-syncs provider changes to OpenClaw with minimal restart
+- **Integrated into Desktop Pet lifecycle**: Watcher starts with pet, stops on quit—no manual management needed
+- **Installed `better-sqlite3`** dependency for DB monitoring
+
+---
+
 ## [2.0.2] - 2026-02-10
 
 ### 📝 Docs

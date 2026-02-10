@@ -329,6 +329,41 @@ body::after {
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 .testing { animation: pulse 1s infinite; }
 
+/* ===== 监控日志 ===== */
+.log-toolbar {
+  display: flex; align-items: center; gap: 6px; padding: 8px 14px;
+  flex-wrap: wrap;
+}
+.log-filter {
+  padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 500;
+  cursor: pointer; color: #666; background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s;
+}
+.log-filter:hover { color: #bbb; background: rgba(255,255,255,0.06); }
+.log-filter.active { color: #a78bfa; border-color: rgba(124,107,240,0.3); background: rgba(124,107,240,0.08); }
+.log-container {
+  padding: 0 14px 14px; max-height: calc(100vh - 140px);
+  overflow-y: auto; font-family: 'Consolas', 'Monaco', monospace;
+}
+.log-entry {
+  display: flex; align-items: flex-start; gap: 8px; padding: 5px 8px;
+  border-radius: 6px; margin-bottom: 2px; font-size: 11px; line-height: 1.5;
+  transition: background 0.15s;
+}
+.log-entry:hover { background: rgba(255,255,255,0.02); }
+.log-time { color: #444; white-space: nowrap; flex-shrink: 0; font-size: 10px; }
+.log-level {
+  padding: 1px 5px; border-radius: 4px; font-size: 9px; font-weight: 600;
+  flex-shrink: 0; text-transform: uppercase; min-width: 46px; text-align: center;
+}
+.log-level-info { background: rgba(59,130,246,0.12); color: #60a5fa; }
+.log-level-success { background: rgba(34,197,94,0.12); color: #4ade80; }
+.log-level-warn { background: rgba(251,191,36,0.12); color: #fbbf24; }
+.log-level-error { background: rgba(248,113,113,0.12); color: #f87171; }
+.log-action { color: #ccc; flex-shrink: 0; }
+.log-detail { color: #666; word-break: break-all; }
+.log-empty { text-align: center; padding: 40px 16px; color: #444; font-size: 12px; }
+
 .model-edit-row {
   display: flex; align-items: center; gap: 8px; padding: 5px 0;
   border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -349,6 +384,7 @@ body::after {
     <span class="lang-toggle" onclick="toggleLang()" id="langBtn">中/EN</span>
     <div class="header-tab active" data-tab="main" onclick="showTab('main')"><span data-t="providers">服务商</span></div>
     <div class="header-tab" data-tab="models" onclick="showTab('models')"><span data-t="models">模型</span></div>
+    <div class="header-tab" data-tab="logs" onclick="showTab('logs')"><span data-t="logs">日志</span></div>
     <button class="header-add" onclick="showTab('add')" title="添加">+</button>
   </div>
 </div>
@@ -359,7 +395,6 @@ body::after {
   <div style="padding: 0 14px 6px; display: flex; gap: 6px; flex-wrap: wrap;">
     <button class="btn btn-speed btn-sm" onclick="speedTestAll()" id="speedTestAllBtn"><span data-t="testAll">⏱ 全部测速</span></button>
     <button class="btn btn-ghost btn-sm" onclick="refreshAll()"><span data-t="refresh">↻ 刷新</span></button>
-    <button class="btn btn-ghost btn-sm" onclick="importFromCCSwitch()" id="importFromCCSwitchBtn"><span data-t="importFromCC">⬇ 从CC Switch导入</span></button>
   </div>
   <div class="provider-list" id="providerList"></div>
 </div>
@@ -436,6 +471,21 @@ body::after {
   <div class="edit-panel" id="editPanel"></div>
 </div>
 
+<!-- Panel 5: 监控日志 -->
+<div id="panel-logs" class="panel">
+  <div class="log-toolbar">
+    <span class="log-filter active" data-level="all" onclick="filterLogs('all',this)"><span data-t="logAll">全部</span></span>
+    <span class="log-filter" data-level="success" onclick="filterLogs('success',this)"><span data-t="logSuccess">成功</span></span>
+    <span class="log-filter" data-level="info" onclick="filterLogs('info',this)"><span data-t="logInfo">信息</span></span>
+    <span class="log-filter" data-level="warn" onclick="filterLogs('warn',this)"><span data-t="logWarn">警告</span></span>
+    <span class="log-filter" data-level="error" onclick="filterLogs('error',this)"><span data-t="logError">错误</span></span>
+    <span style="flex:1"></span>
+    <button class="btn btn-ghost btn-sm" onclick="refreshLogs()"><span data-t="logRefresh">↻ 刷新</span></button>
+    <button class="btn btn-danger btn-sm" onclick="clearLogs()"><span data-t="logClear">清除</span></button>
+  </div>
+  <div class="log-container" id="logContainer"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -459,7 +509,9 @@ const i18n = {
     switched:'已切换到', added:'已添加', updated:'已更新', deleted:'已删除', removed:'已移除',
     enterName:'请输入名称', enterKey:'请输入 API Key', enterModelId:'请输入模型 ID',
     noChanges:'无更改', confirmDelete:'确认删除', confirmDeleteHint:'？所有模型将不可用',
-    confirmRemove:'确认移除模型' },
+    confirmRemove:'确认移除模型',
+    logs:'日志', logAll:'全部', logSuccess:'成功', logInfo:'信息', logWarn:'警告', logError:'错误',
+    logRefresh:'↻ 刷新', logClear:'清除', logEmpty:'暂无日志', logCleared:'日志已清除' },
   en: { providers:'Providers', models:'Models', testAll:'⏱ Test All', refresh:'↻ Refresh',
     currentlyUsing:'Currently Using', switchBtn:'Switch', noModel:'No model selected',
     noProviders:'No providers', noProvidersHint:'Click + to add', presetTitle:'Provider Preset',
@@ -472,7 +524,9 @@ const i18n = {
     switched:'Switched to', added:'Added', updated:'Updated', deleted:'Deleted', removed:'Removed',
     enterName:'Enter name', enterKey:'Enter API Key', enterModelId:'Enter model ID',
     noChanges:'No changes', confirmDelete:'Delete', confirmDeleteHint:'? All models unavailable.',
-    confirmRemove:'Remove model' }
+    confirmRemove:'Remove model',
+    logs:'Logs', logAll:'All', logSuccess:'Success', logInfo:'Info', logWarn:'Warn', logError:'Error',
+    logRefresh:'↻ Refresh', logClear:'Clear', logEmpty:'No logs yet', logCleared:'Logs cleared' }
 };
 function t(k) { return i18n[currentLang][k] || i18n.en[k] || k; }
 function toggleLang() { currentLang = currentLang==='zh'?'en':'zh'; document.getElementById('langBtn').textContent = currentLang==='zh'?'中/EN':'EN/中'; applyLang(); }
@@ -482,13 +536,25 @@ function applyLang() {
   if(document.getElementById('panel-models').classList.contains('active')){ loadModels(); }
 }
 
+// ===== XSS Safety Helpers =====
+function escHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[ch]));
+}
+function encArg(v) { return encodeURIComponent(String(v ?? '')); }
+
 // ===== Tab =====
 function showTab(name) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.header-tab').forEach(t=>t.classList.remove('active'));
   const panel=document.getElementById(`panel-${name}`); if(panel) panel.classList.add('active');
   const tab=document.querySelector(`.header-tab[data-tab="${name}"]`); if(tab) tab.classList.add('active');
-  if(name==='main') loadAll(); if(name==='models') loadModels(); if(name==='add') loadPresets();
+  if(name==='main') loadAll(); if(name==='models') loadModels(); if(name==='add') loadPresets(); if(name==='logs') loadLogs();
 }
 
 async function loadAll() {
@@ -502,10 +568,10 @@ function renderCurrentIndicator() {
   const el=document.getElementById('currentIndicator');
   if(!currentModel){ el.innerHTML=`<div class="empty-state" style="padding:12px;"><div class="empty-text">${t('noModel')}</div></div>`; return; }
   el.innerHTML=`
-    <div class="current-icon" style="background:${currentModel.color}">${currentModel.icon}</div>
+    <div class="current-icon" style="background:${currentModel.color}">${escHtml(currentModel.icon)}</div>
     <div class="current-info"><div class="current-label">${t('currentlyUsing')}</div>
-    <div class="current-model-name">${currentModel.shortName}</div>
-    <div class="current-provider-name">${currentModel.provider} · ${currentModel.modelId}</div></div>
+    <div class="current-model-name">${escHtml(currentModel.shortName)}</div>
+    <div class="current-provider-name">${escHtml(currentModel.provider)} · ${escHtml(currentModel.modelId)}</div></div>
     <button class="current-switch-btn" onclick="showTab('models')">${t('switchBtn')}</button>`;
 }
 
@@ -514,14 +580,15 @@ function renderProviderList() {
   if(allProviders.length===0){ el.innerHTML=`<div class="empty-state"><div class="empty-icon">⊕</div><div class="empty-text">${t('noProviders')}</div><div class="empty-hint">${t('noProvidersHint')}</div></div>`; return; }
   el.innerHTML=allProviders.map(p=>{
     const cur=p.isCurrent, spd=renderSpeedBadge(p.speedTest);
-    return `<div class="provider-card glass-card ${cur?'current':''}" onclick="switchProvider('${p.name}')" ondblclick="event.stopPropagation();editProvider('${p.name}')">
+    const n=encArg(p.name);
+    return `<div class="provider-card glass-card ${cur?'current':''}" onclick="switchProvider(decodeURIComponent('${n}'))" ondblclick="event.stopPropagation();editProvider(decodeURIComponent('${n}'))">
       <div class="drag-handle"><div class="drag-dot"><span></span><span></span></div><div class="drag-dot"><span></span><span></span></div><div class="drag-dot"><span></span><span></span></div></div>
-      <div class="provider-icon" style="background:${p.color}">${p.icon}</div>
-      <div class="provider-info"><div class="provider-name-row"><span class="provider-name">${p.name}</span>${cur?`<span class="provider-badge">${t('currentlyUsing')}</span>`:''}</div>
-      <div class="provider-url">${p.website||p.baseUrl||''}</div></div>
+      <div class="provider-icon" style="background:${p.color}">${escHtml(p.icon)}</div>
+      <div class="provider-info"><div class="provider-name-row"><span class="provider-name">${escHtml(p.name)}</span>${cur?`<span class="provider-badge">${t('currentlyUsing')}</span>`:''}</div>
+      <div class="provider-url">${escHtml(p.website||p.baseUrl||'')}</div></div>
       <div class="provider-right">${spd}<div class="provider-models-count">${p.modelCount} model${p.modelCount!==1?'s':''}</div>
-      <div class="provider-actions-row"><button class="btn btn-speed btn-sm" onclick="event.stopPropagation();speedTest('${p.name}')">⏱</button>
-      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editProvider('${p.name}')">✎</button></div></div></div>`;
+      <div class="provider-actions-row"><button class="btn btn-speed btn-sm" onclick="event.stopPropagation();speedTest(decodeURIComponent('${n}'))">⏱</button>
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editProvider(decodeURIComponent('${n}'))">✎</button></div></div></div>`;
   }).join('');
 }
 
@@ -535,27 +602,6 @@ function renderSpeedBadge(s) {
 async function speedTest(name) { if(!ipcRenderer) return; showToast(`${t('testing')}`,'info'); const r=await ipcRenderer.invoke('model-speed-test',name); showToast(r.status==='ok'?`${name}: ${r.latencyMs}ms`:`${name}: Error`,'success'); loadAll(); }
 async function speedTestAll() { if(!ipcRenderer) return; const btn=document.getElementById('speedTestAllBtn'); btn.classList.add('testing'); showToast(t('testing'),'info'); await ipcRenderer.invoke('model-speed-test-all'); btn.classList.remove('testing'); showToast(t('testComplete'),'success'); loadAll(); }
 
-async function importFromCCSwitch() {
-  if(!ipcRenderer) return;
-  if(!confirm('确定要从 CC Switch 导入配置吗？\n已存在的同名服务商将被跳过。')) return;
-  const btn=document.getElementById('importFromCCSwitchBtn');
-  btn.disabled=true;
-  showToast('正在从 CC Switch 导入...','info');
-  try {
-    const r=await ipcRenderer.invoke('import-from-ccswitch');
-    if(r.success){
-      showToast(`✅ 导入成功！共导入 ${r.providersCount} 个服务商`,'success');
-      await loadAll();
-    }else{
-      showToast(`❌ 导入失败: ${r.error}`,'error');
-    }
-  } catch(err) {
-    showToast(`❌ 导入失败: ${err.message}`,'error');
-  } finally {
-    btn.disabled=false;
-  }
-}
-
 async function loadModels() {
   if(!ipcRenderer) return;
   const s=await ipcRenderer.invoke('model-full-status'); if(!s) return;
@@ -564,11 +610,11 @@ async function loadModels() {
   for(const m of allModels){ if(!groups[m.provider]) groups[m.provider]=[]; groups[m.provider].push(m); }
   let html='';
   for(const [prov,models] of Object.entries(groups)){
-    html+=`<div class="model-section-title">${prov}</div><div class="model-grid">`;
-    for(const m of models){ const act=currentModel?.id===m.id; html+=`
-      <div class="model-row ${act?'active':''}" onclick="switchModel('${m.id}')">
-        <div class="model-icon-sm" style="background:${m.color}">${m.icon}</div>
-        <div class="model-name-text">${m.shortName}</div>
+    html+=`<div class="model-section-title">${escHtml(prov)}</div><div class="model-grid">`;
+    for(const m of models){ const act=currentModel?.id===m.id; const mid=encArg(m.id); html+=`
+      <div class="model-row ${act?'active':''}" onclick="switchModel(decodeURIComponent('${mid}'))">
+        <div class="model-icon-sm" style="background:${m.color}">${escHtml(m.icon)}</div>
+        <div class="model-name-text">${escHtml(m.shortName)}</div>
         <div class="model-tags">${m.reasoning?'<span class="model-tag reasoning">🧠</span>':''}<span class="model-tag">${Math.round(m.contextWindow/1000)}K</span></div>
         <div class="model-check-mark">${act?'✓':''}</div></div>`; }
     html+='</div>';
@@ -591,27 +637,32 @@ async function editProvider(name) {
   editingProvider=name; const s=await ipcRenderer.invoke('model-full-status');
   const p=s.providers.find(x=>x.name===name); if(!p) return;
   const models=allModels.filter(m=>m.provider===name);
+  const n=encArg(name);
+  const modelRows=models.map(m=>{
+    const mid=encArg(m.modelId);
+    return `<div class="model-edit-row"><div class="model-icon-sm" style="background:${m.color};width:22px;height:22px;font-size:9px;">${escHtml(m.icon)}</div>
+    <div class="model-edit-name">${escHtml(m.shortName)}</div><div class="model-edit-id">${escHtml(m.modelId)}</div>
+    <button class="btn btn-danger btn-sm" onclick="removeModel(decodeURIComponent('${n}'),decodeURIComponent('${mid}'))">×</button></div>`;
+  }).join('');
   document.getElementById('editPanel').innerHTML=`
     <div class="edit-header"><button class="edit-back" onclick="showTab('main')">←</button>
-    <div class="edit-provider-icon" style="background:${p.color}">${p.icon}</div>
-    <div><div class="edit-title">${name}</div><div style="font-size:10px;color:#555;">${p.apiType}</div></div></div>
-    <div class="form-group"><label class="form-label">Base URL</label><input class="form-input" id="editBaseUrl" value="${p.baseUrl||''}"></div>
+    <div class="edit-provider-icon" style="background:${p.color}">${escHtml(p.icon)}</div>
+    <div><div class="edit-title">${escHtml(name)}</div><div style="font-size:10px;color:#555;">${escHtml(p.apiType)}</div></div></div>
+    <div class="form-group"><label class="form-label">Base URL</label><input class="form-input" id="editBaseUrl" value="${escHtml(p.baseUrl||'')}"></div>
     <div class="form-group"><label class="form-label">API Key</label><input class="form-input" id="editApiKey" type="password" placeholder="${p.hasApiKey?'••••••••':''}">
     <div class="form-hint">${p.hasApiKey?t('keySet'):t('keyNotSet')}</div></div>
     <div style="display:flex;gap:6px;margin-top:10px;">
     <button class="btn btn-primary" onclick="saveProviderEdit()">${t('saveChanges')}</button>
-    <button class="btn btn-speed" onclick="speedTest('${name}')">${t('test')}</button>
-    <button class="btn btn-ghost" onclick="fetchProviderModels('${name}')">📡 获取模型</button>
-    <button class="btn btn-danger" onclick="deleteProvider('${name}')">${t('delete')}</button></div>
+    <button class="btn btn-speed" onclick="speedTest(decodeURIComponent('${n}'))">${t('test')}</button>
+    <button class="btn btn-ghost" onclick="fetchProviderModels(decodeURIComponent('${n}'))">📡 获取模型</button>
+    <button class="btn btn-danger" onclick="deleteProvider(decodeURIComponent('${n}'))">${t('delete')}</button></div>
     <div class="divider"></div>
     <div style="font-size:12px;font-weight:600;color:#888;margin-bottom:6px;">${t('models')} (${models.length})</div>
-    ${models.map(m=>`<div class="model-edit-row"><div class="model-icon-sm" style="background:${m.color};width:22px;height:22px;font-size:9px;">${m.icon}</div>
-    <div class="model-edit-name">${m.shortName}</div><div class="model-edit-id">${m.modelId}</div>
-    <button class="btn btn-danger btn-sm" onclick="removeModel('${name}','${m.modelId}')">×</button></div>`).join('')}
+    ${modelRows}
     <div style="margin-top:8px;"><div class="form-row" style="margin-bottom:6px;">
     <input class="form-input" id="newModelId" placeholder="Model ID" style="font-size:11px;">
     <input class="form-input" id="newModelName" placeholder="${t('displayName')}" style="font-size:11px;">
-    <button class="btn btn-ghost btn-sm" onclick="addModelToProvider('${name}')">+</button></div></div>`;
+    <button class="btn btn-ghost btn-sm" onclick="addModelToProvider(decodeURIComponent('${n}'))">+</button></div></div>`;
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.header-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('panel-edit').classList.add('active');
@@ -638,11 +689,11 @@ async function fetchProviderModels(prov) {
 }
 
 async function loadPresets() { if(!ipcRenderer) return; const presets=await ipcRenderer.invoke('model-presets'); document.getElementById('presetGrid').innerHTML=presets.map(p=>`
-  <div class="preset-card ${selectedPreset===p.key?'selected':''}" onclick="selectPreset('${p.key}')">
-  <div class="preset-card-count">${p.modelCount}</div><div class="preset-card-icon" style="background:${p.color}">${p.icon}</div>
-  <div class="preset-card-name">${p.name}</div><div class="preset-card-desc">${p.description||''}</div></div>`).join(''); }
+  <div class="preset-card ${selectedPreset===p.key?'selected':''}" onclick="selectPreset('${p.key}', event)">
+  <div class="preset-card-count">${p.modelCount}</div><div class="preset-card-icon" style="background:${p.color}">${escHtml(p.icon)}</div>
+  <div class="preset-card-name">${escHtml(p.name)}</div><div class="preset-card-desc">${escHtml(p.description||'')}</div></div>`).join(''); }
 
-function selectPreset(key) { if(!ipcRenderer) return; ipcRenderer.invoke('model-presets').then(presets=>{ const p=presets.find(x=>x.key===key); if(!p) return; selectedPreset=key; document.getElementById('addName').value=p.name; document.getElementById('addBaseUrl').value=p.baseUrl; document.getElementById('addApiType').value=p.api; document.querySelectorAll('.preset-card').forEach(el=>el.classList.remove('selected')); event.target.closest('.preset-card').classList.add('selected'); }); }
+function selectPreset(key, evt) { if(!ipcRenderer) return; ipcRenderer.invoke('model-presets').then(presets=>{ const p=presets.find(x=>x.key===key); if(!p) return; selectedPreset=key; document.getElementById('addName').value=p.name; document.getElementById('addBaseUrl').value=p.baseUrl; document.getElementById('addApiType').value=p.api; document.querySelectorAll('.preset-card').forEach(el=>el.classList.remove('selected')); evt?.target?.closest?.('.preset-card')?.classList.add('selected'); }); }
 
 function addModelRow() { const c=document.getElementById('addModelRows'),r=document.createElement('div'); r.className='form-row'; r.style.marginBottom='6px'; r.innerHTML=`<input class="form-input" placeholder="Model ID" data-field="id"><input class="form-input" placeholder="${t('displayName')}" data-field="name">`; c.appendChild(r); }
 
@@ -657,6 +708,69 @@ async function submitProvider() {
 
 function refreshAll() { loadAll(); showToast(t('refreshed'),'info'); }
 function showToast(msg,type='success') { const toast=document.getElementById('toast'); toast.textContent=msg; toast.className=`toast toast-${type} show`; setTimeout(()=>toast.classList.remove('show'),2500); }
+
+// ===== 监控日志 =====
+let currentLogFilter = null;
+let logEntries = [];
+
+async function loadLogs() {
+  if(!ipcRenderer) return;
+  logEntries = await ipcRenderer.invoke('switch-log-list', 200, currentLogFilter);
+  renderLogs();
+}
+
+function renderLogs() {
+  const el = document.getElementById('logContainer');
+  const filtered = currentLogFilter ? logEntries.filter(e => e.level === currentLogFilter) : logEntries;
+  if(filtered.length === 0) {
+    el.innerHTML = `<div class="log-empty">${t('logEmpty')}</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(e => {
+    const timeStr = e.time ? e.time.replace('T',' ').substring(5,19) : '';
+    return `<div class="log-entry">
+      <span class="log-time">${escHtml(timeStr)}</span>
+      <span class="log-level log-level-${e.level}">${escHtml(e.level)}</span>
+      <span class="log-action">${escHtml(e.action)}</span>
+      <span class="log-detail">${escHtml(e.detail || '')}</span>
+    </div>`;
+  }).join('');
+  // 自动滚动到底部
+  el.scrollTop = el.scrollHeight;
+}
+
+function filterLogs(level, btn) {
+  currentLogFilter = level === 'all' ? null : level;
+  document.querySelectorAll('.log-filter').forEach(f => f.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(logEntries.length > 0) {
+    renderLogs();
+  } else {
+    loadLogs();
+  }
+}
+
+function refreshLogs() { loadLogs(); }
+
+async function clearLogs() {
+  if(!ipcRenderer) return;
+  await ipcRenderer.invoke('switch-log-clear');
+  logEntries = [];
+  renderLogs();
+  showToast(t('logCleared'), 'info');
+}
+
+// 实时接收新日志
+if(ipcRenderer) {
+  ipcRenderer.on('switch-log-entry', (event, entry) => {
+    logEntries.push(entry);
+    if(logEntries.length > 500) logEntries.splice(0, logEntries.length - 500);
+    // 如果日志面板可见，实时更新
+    if(document.getElementById('panel-logs').classList.contains('active')) {
+      renderLogs();
+    }
+  });
+}
 
 loadAll();
 if(ipcRenderer) { ipcRenderer.on('model-changed',()=>{loadAll();loadModels();}); }

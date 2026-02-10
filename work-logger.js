@@ -92,37 +92,6 @@ class WorkLogger {
         return this.log('success', message);
     }
 
-    async logThinking(thought) {
-        return this.log('thinking', thought);
-    }
-
-    async logVoice(text, action = 'spoke') {
-        return this.log('voice', `${action}: "${text}"`);
-    }
-
-    // 获取今天的日志
-    async getTodayLog() {
-        const logFile = path.join(this.logDir, `${this.currentDate}.md`);
-        try {
-            const content = await fs.readFile(logFile, 'utf8');
-            return content;
-        } catch (err) {
-            return `# ${this.currentDate}\n\n*今日日志*\n\n`;
-        }
-    }
-
-    // 每日总结
-    async writeDailySummary(summary) {
-        const logFile = path.join(this.logDir, `${this.currentDate}.md`);
-        const summaryText = `\n---\n\n## 📊 今日总结\n\n${summary}\n\n*生成时间: ${new Date().toLocaleString('zh-CN')}*\n`;
-        
-        try {
-            await fs.appendFile(logFile, summaryText, 'utf8');
-        } catch (err) {
-            console.error('写入总结失败:', err);
-        }
-    }
-
     getSessionLog() {
         return this.sessionLog;
     }

@@ -119,6 +119,13 @@ class ServiceManager extends EventEmitter {
         return new Promise((resolve, reject) => {
             const openclawPath = path.join(process.env.HOME || process.env.USERPROFILE, '.npm-global', 'node_modules', 'openclaw', 'dist', 'index.js');
 
+            const fs = require('fs');
+            if (!fs.existsSync(openclawPath)) {
+                this.log('error', `openclaw 不存在: ${openclawPath}`, 'gateway');
+                resolve({ success: false, error: `openclaw 不存在: ${openclawPath}` });
+                return;
+            }
+
             const child = spawn('node', [openclawPath, 'gateway', '--port', '18789'], {
                 detached: true,
                 stdio: 'ignore',

@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+const SwitchLogger = require('./switch-logger');
 
 // ===== 预设 Provider 模板（参考 CC Switch 的 17+ 预设） =====
 const PROVIDER_PRESETS = {
@@ -43,7 +44,9 @@ const PROVIDER_PRESETS = {
     models: [
       { id: 'gpt-4o', name: 'GPT-4o', reasoning: false, contextWindow: 128000, maxTokens: 16384 },
       { id: 'gpt-4o-mini', name: 'GPT-4o Mini', reasoning: false, contextWindow: 128000, maxTokens: 16384 },
-      { id: 'o3-mini', name: 'o3-mini', reasoning: true, contextWindow: 200000, maxTokens: 100000 },
+      { id: 'o3-mini', name: 'o3-mini', reasoning: true, contextWindow: 200000, maxTokens: 100000, params: { reasoning_effort: 'high' } },
+      { id: 'o3', name: 'o3', reasoning: true, contextWindow: 200000, maxTokens: 100000, params: { reasoning_effort: 'high' } },
+      { id: 'o4-mini', name: 'o4-mini', reasoning: true, contextWindow: 200000, maxTokens: 100000, params: { reasoning_effort: 'high' } },
     ]
   },
   'google': {
@@ -170,7 +173,10 @@ class ModelSwitcher {
     this.listeners = [];      // 变更监听器
     this.speedTestResults = {};  // 测速结果缓存
     this.providerOrder = [];    // Provider 排序
-    
+
+    // 监控日志
+    this.switchLog = new SwitchLogger();
+
     this._loadConfig();
   }
 
@@ -220,6 +226,7 @@ class ModelSwitcher {
             reasoning: model.reasoning || false,
             contextWindow: model.contextWindow || 200000,
             maxTokens: model.maxTokens || 32000,
+            params: model.params || null,
             color: this._getModelColor(model.id),
             icon: this._getModelIcon(model.id),
           });
@@ -235,8 +242,10 @@ class ModelSwitcher {
       }
       
       console.log(`🔄 ModelSwitcher V3: ${Object.keys(this.providers).length} providers, ${this.models.length} models, current: ${this.currentModel?.shortName || '?'}`);
+      this.switchLog.info('配置加载', `${Object.keys(this.providers).length} providers, ${this.models.length} models, current: ${this.currentModel?.shortName || '?'}`);
     } catch (err) {
       console.error('❌ ModelSwitcher 配置加载失败:', err.message);
+      this.switchLog.error('配置加载失败', err.message);
     }
   }
 
@@ -274,7 +283,10 @@ class ModelSwitcher {
   }
 
   _saveConfig(config) {
-    fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2), 'utf8');
+    // 原子写入：先写临时文件再 rename
+    const tmpPath = this.configPath + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(config, null, 2), 'utf8');
+    fs.renameSync(tmpPath, this.configPath);
     // 热映射: 同步写入 models.json
     this._syncModelsJson(config);
   }
@@ -339,6 +351,12 @@ class ModelSwitcher {
       throw new Error(`Provider "${name}" already exists. Use updateProvider() to modify.`);
     }
 
+    // Avoid case-insensitive collisions (some consumers treat provider keys as case-insensitive).
+    const existing = Object.keys(config.models.providers).find(k => k.toLowerCase() === String(name).toLowerCase());
+    if (existing) {
+      throw new Error(`Provider "${name}" conflicts with existing "${existing}" (case-insensitive). Please rename.`);
+    }
+
     const detectedApi = opts.api || this._detectApiType(opts.baseUrl, '');
     const provider = {
       baseUrl: opts.baseUrl || '',
@@ -362,7 +380,9 @@ class ModelSwitcher {
     if (!config.agents.defaults) config.agents.defaults = {};
     if (!config.agents.defaults.models) config.agents.defaults.models = {};
     for (const m of provider.models) {
-      config.agents.defaults.models[`${name}/${m.id}`] = {};
+      const modelEntry = {};
+      if (m.params) modelEntry.params = m.params;
+      config.agents.defaults.models[`${name}/${m.id}`] = modelEntry;
     }
 
     this._saveConfig(config);
@@ -370,6 +390,7 @@ class ModelSwitcher {
     this._notifyListeners();
 
     console.log(`✅ Provider added: ${name} (${provider.models.length} models)`);
+    this.switchLog.success('添加 Provider', `${name} (${provider.models.length} models, api: ${detectedApi})`);
     return provider;
   }
 
@@ -404,6 +425,7 @@ class ModelSwitcher {
     this._notifyListeners();
 
     console.log(`✅ Provider updated: ${name}`);
+    this.switchLog.info('更新 Provider', `${name} | ${JSON.stringify(updates)}`);
     return provider;
   }
 
@@ -438,6 +460,7 @@ class ModelSwitcher {
     this._notifyListeners();
 
     console.log(`✅ Provider removed: ${name}`);
+    this.switchLog.warn('删除 Provider', name);
   }
 
   getProviders() {
@@ -492,17 +515,29 @@ class ModelSwitcher {
       const url = new URL(provider.baseUrl);
       const isHttps = url.protocol === 'https:';
       const httpModule = isHttps ? https : http;
-      
+
+      // 构建 /v1/models 请求路径（与 fetchModels 保持一致）
+      let testPath = url.pathname;
+      if (testPath.endsWith('/')) testPath = testPath.slice(0, -1);
+      if (/\/v\d+/.test(testPath)) testPath += '/models';
+      else testPath += '/v1/models';
+
       await new Promise((resolve, reject) => {
+        const headers = { 'Content-Type': 'application/json' };
+        // Anthropic 用 x-api-key，OpenAI 兼容用 Authorization Bearer
+        if (provider.api === 'anthropic-messages') {
+          headers['x-api-key'] = provider.apiKey;
+          headers['anthropic-version'] = '2023-06-01';
+        } else {
+          headers['Authorization'] = `Bearer ${provider.apiKey}`;
+        }
+
         const req = httpModule.request({
           hostname: url.hostname,
           port: url.port || (isHttps ? 443 : 80),
-          path: url.pathname === '/' ? '/v1/models' : url.pathname,
+          path: testPath,
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${provider.apiKey}`,
-            'Content-Type': 'application/json',
-          },
+          headers,
           timeout: 10000,
         }, (res) => {
           let data = '';
@@ -524,10 +559,12 @@ class ModelSwitcher {
       this.speedTestResults[providerName] = result;
       
       console.log(`⏱️ Speed test ${providerName}: ${latencyMs}ms (${quality})`);
+      this.switchLog.info('测速', `${providerName}: ${latencyMs}ms (${quality})`);
       return result;
     } catch (err) {
       const result = { latencyMs: -1, status: 'error', error: err.message, timestamp: Date.now() };
       this.speedTestResults[providerName] = result;
+      this.switchLog.error('测速失败', `${providerName}: ${err.message}`);
       return result;
     }
   }
@@ -600,16 +637,38 @@ class ModelSwitcher {
         return { success: false, error: `HTTP ${data.statusCode}` };
       }
 
-      // 解析模型列表（兼容 OpenAI 和 Anthropic 格式）
+      // 解析模型列表（兼容 OpenAI / Anthropic / Gemini / OpenRouter 格式）
       let models = [];
       const body = data.body;
 
       if (body.data && Array.isArray(body.data)) {
-        // OpenAI 格式: { data: [{ id: "gpt-4o", ... }] }
-        models = body.data.map(m => ({
-          id: m.id,
-          name: m.name || m.id,
-        }));
+        // OpenAI / Anthropic / OpenRouter 格式: { data: [...] }
+        models = body.data.map(m => {
+          const model = {
+            id: m.id,
+            name: m.display_name || m.name || m.id,
+          };
+          // OpenRouter 返回丰富元数据
+          if (m.context_length) model.contextWindow = m.context_length;
+          if (m.top_provider?.max_completion_tokens) model.maxTokens = m.top_provider.max_completion_tokens;
+          if (m.supported_parameters?.includes('reasoning')) {
+            model.reasoning = true;
+            model.params = { reasoning_effort: 'high' };
+          }
+          return model;
+        });
+      } else if (body.models && Array.isArray(body.models)) {
+        // Google Gemini 格式: { models: [...] }
+        models = body.models.map(m => {
+          const model = {
+            id: (m.name || '').replace('models/', ''),
+            name: m.displayName || m.name,
+          };
+          if (m.inputTokenLimit) model.contextWindow = m.inputTokenLimit;
+          if (m.outputTokenLimit) model.maxTokens = m.outputTokenLimit;
+          if (m.thinking) model.reasoning = true;
+          return model;
+        });
       } else if (Array.isArray(body)) {
         models = body.map(m => ({
           id: m.id || m.model,
@@ -617,10 +676,15 @@ class ModelSwitcher {
         }));
       }
 
+      // 用已知模型元数据补全 API 未返回的字段
+      models = models.map(m => this._enrichModelMeta(m));
+
       console.log(`📡 ${providerName}: 获取到 ${models.length} 个模型`);
+      this.switchLog.info('获取模型列表', `${providerName}: ${models.length} 个模型`);
       return { success: true, models };
     } catch (err) {
       console.error(`❌ 获取模型失败 ${providerName}:`, err.message);
+      this.switchLog.error('获取模型失败', `${providerName}: ${err.message}`);
       return { success: false, error: err.message };
     }
   }
@@ -638,7 +702,7 @@ class ModelSwitcher {
       throw new Error(`Model "${model.id}" already exists in provider "${providerName}"`);
     }
 
-    provider.models.push({
+    const modelEntry = {
       id: model.id,
       name: model.name || model.id,
       api: model.api || this._detectApiType(provider.baseUrl, model.id),
@@ -647,18 +711,23 @@ class ModelSwitcher {
       cost: model.cost || { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
       contextWindow: model.contextWindow || 200000,
       maxTokens: model.maxTokens || 32000,
-    });
+    };
+    if (model.params) modelEntry.params = model.params;
+    provider.models.push(modelEntry);
 
     if (!config.agents) config.agents = { defaults: {} };
     if (!config.agents.defaults) config.agents.defaults = {};
     if (!config.agents.defaults.models) config.agents.defaults.models = {};
-    config.agents.defaults.models[`${providerName}/${model.id}`] = {};
+    const agentModelEntry = {};
+    if (model.params) agentModelEntry.params = model.params;
+    config.agents.defaults.models[`${providerName}/${model.id}`] = agentModelEntry;
 
     this._saveConfig(config);
     this._loadConfig();
     this._notifyListeners();
 
     console.log(`✅ Model added: ${providerName}/${model.id}`);
+    this.switchLog.success('添加模型', `${providerName}/${model.id}`);
   }
 
   removeModel(providerName, modelId) {
@@ -672,11 +741,29 @@ class ModelSwitcher {
       delete config.agents.defaults.models[`${providerName}/${modelId}`];
     }
 
+    // 如果删除的是默认模型，回退到第一个可用模型，避免 primary 指向不存在的模型
+    const removedFullId = `${providerName}/${modelId}`;
+    if (config.agents?.defaults?.model?.primary === removedFullId) {
+      const providers = config.models?.providers || {};
+      let nextPrimary = null;
+      for (const [pName, pCfg] of Object.entries(providers)) {
+        const first = (pCfg.models || [])[0];
+        if (first?.id) {
+          nextPrimary = `${pName}/${first.id}`;
+          break;
+        }
+      }
+      if (nextPrimary) {
+        config.agents.defaults.model.primary = nextPrimary;
+      }
+    }
+
     this._saveConfig(config);
     this._loadConfig();
     this._notifyListeners();
 
     console.log(`✅ Model removed: ${providerName}/${modelId}`);
+    this.switchLog.warn('删除模型', `${providerName}/${modelId}`);
   }
 
   // ==================== 模型切换 ====================
@@ -745,112 +832,101 @@ class ModelSwitcher {
   async _applySwitch() {
     this.currentModel = this.models[this.currentIndex];
     console.log(`🔄 切换模型 → ${this.currentModel.shortName} (${this.currentModel.id})`);
+    this.switchLog.success('切换模型', `${this.currentModel.shortName} (${this.currentModel.provider}/${this.currentModel.modelId})`);
 
-    // 1. 热切换当前 session（立即生效，不重启）
-    this._gatewaySessionPatch(this.currentModel.id);
-    // 2. 更新持久化默认模型配置
-    this._openclawModelSet(this.currentModel.id);
+    // 直接改写 openclaw.json，Gateway 的 file watcher 会自动热加载
+    this._writeModelToConfig(this.currentModel.id);
 
     this._notifyListeners();
     return this.currentModel;
   }
 
-  _gatewaySessionPatch(modelId) {
-    const { spawn } = require('child_process');
-    console.log(`🔥 热切换所有 sessions → ${modelId}`);
+  _writeModelToConfig(modelId) {
+    try {
+      const config = this._readConfig();
 
-    // 先获取所有 session key，再逐个 patch
-    const listChild = spawn('openclaw', ['gateway', 'call', 'sessions.list'], {
-      shell: true,
-      windowsHide: true,
-      stdio: 'pipe'
-    });
+      // 确保路径存在
+      if (!config.agents) config.agents = {};
+      if (!config.agents.defaults) config.agents.defaults = {};
+      if (!config.agents.defaults.model) config.agents.defaults.model = {};
 
-    let listOutput = '';
-    listChild.stdout?.on('data', d => { listOutput += d.toString(); });
-    listChild.stderr?.on('data', d => console.warn(`[sessions.list] ${d.toString().trim()}`));
-    listChild.on('close', code => {
-      if (code !== 0) {
-        console.warn(`⚠️ sessions.list exit ${code}, 回退到 patch key=main`);
-        this._patchSingleSession('main', modelId);
-        return;
+      const previousModel = config.agents.defaults.model.primary;
+      config.agents.defaults.model.primary = modelId;
+
+      // 同步模型的 params（如 reasoning_effort）到 agents.defaults.models
+      if (!config.agents.defaults.models) config.agents.defaults.models = {};
+      const model = this.models.find(m => m.id === modelId);
+      if (model && model.params) {
+        config.agents.defaults.models[modelId] = {
+          ...(config.agents.defaults.models[modelId] || {}),
+          params: model.params
+        };
       }
 
-      // 解析 session keys — stdout 可能混入 plugin 日志行，
-      // 需要提取 JSON 部分（从第一个 { 到最后一个 }）
-      let sessions = [];
-      try {
-        const jsonStart = listOutput.indexOf('{');
-        const jsonEnd = listOutput.lastIndexOf('}');
-        if (jsonStart === -1 || jsonEnd === -1) throw new Error('no JSON found');
-        const jsonStr = listOutput.substring(jsonStart, jsonEnd + 1);
-        const parsed = JSON.parse(jsonStr);
-        if (Array.isArray(parsed)) {
-          sessions = parsed;
-        } else if (parsed.result && Array.isArray(parsed.result)) {
-          sessions = parsed.result;
-        } else if (parsed.sessions && Array.isArray(parsed.sessions)) {
-          sessions = parsed.sessions;
-        }
-      } catch (e) {
-        console.warn('⚠️ sessions.list 解析失败:', e.message);
-      }
+      // 原子写入：先写临时文件再 rename，防止写入中断导致配置损坏
+      const tmpPath = this.configPath + '.tmp';
+      fs.writeFileSync(tmpPath, JSON.stringify(config, null, 2), 'utf8');
+      fs.renameSync(tmpPath, this.configPath);
 
-      // 提取 key 列表
-      const keys = sessions
-        .map(s => s.key || s.id || s)
-        .filter(k => typeof k === 'string' && k.length > 0);
+      // 同步 models.json
+      this._syncModelsJson(config);
 
-      if (keys.length === 0) {
-        console.warn('⚠️ 未获取到 session，回退 patch key=main');
-        this._patchSingleSession('main', modelId);
-        return;
+      console.log(`✅ openclaw.json 已更新: ${previousModel || '(none)'} → ${modelId}`);
+      if (model?.params) {
+        console.log(`   params: ${JSON.stringify(model.params)}`);
       }
+      this.switchLog.info('配置写入', `${previousModel || '(none)'} → ${modelId} (Gateway file watcher 热加载)`);
 
-      console.log(`📋 发现 ${keys.length} 个 session，逐个 patch: ${keys.join(', ')}`);
-      for (const key of keys) {
-        this._patchSingleSession(key, modelId);
-      }
-    });
+      // 重新加载内存状态
+      this._loadConfig();
+    } catch (err) {
+      console.error(`❌ 写入 openclaw.json 失败:`, err.message);
+      this.switchLog.error('配置写入失败', err.message);
+    }
   }
 
-  _patchSingleSession(sessionKey, modelId) {
-    const { spawn } = require('child_process');
-    const params = JSON.stringify({ key: sessionKey, model: modelId });
-    const child = spawn('openclaw', ['gateway', 'call', 'sessions.patch', '--params', params], {
-      shell: true,
-      windowsHide: true,
-      stdio: 'pipe'
-    });
-    child.stdout?.on('data', d => {
-      const s = d.toString().trim();
-      if (s.includes('"ok": true') || s.includes('"ok":true')) {
-        console.log(`✅ Session [${sessionKey}] 热切换成功: ${modelId}`);
-      }
-    });
-    child.stderr?.on('data', d => console.warn(`[session-patch ${sessionKey}] ${d.toString().trim()}`));
-    child.on('close', code => {
-      if (code !== 0) console.warn(`⚠️ session.patch [${sessionKey}] exit ${code}`);
-    });
+  // ==================== 模型元数据补全 ====================
+
+  /**
+   * 已知模型元数据表 — 补全 /models API 未返回的 contextWindow、maxTokens、reasoning、params
+   * OpenAI/Anthropic/DeepSeek 的 /models 接口只返回 id，缺少这些关键字段
+   */
+  static get KNOWN_MODELS() {
+    return {
+      // OpenAI
+      'gpt-4o':            { contextWindow: 128000, maxTokens: 16384, reasoning: false },
+      'gpt-4o-mini':       { contextWindow: 128000, maxTokens: 16384, reasoning: false },
+      'gpt-4-turbo':       { contextWindow: 128000, maxTokens: 4096, reasoning: false },
+      'o3':                { contextWindow: 200000, maxTokens: 100000, reasoning: true, params: { reasoning_effort: 'high' } },
+      'o3-mini':           { contextWindow: 200000, maxTokens: 100000, reasoning: true, params: { reasoning_effort: 'high' } },
+      'o4-mini':           { contextWindow: 200000, maxTokens: 100000, reasoning: true, params: { reasoning_effort: 'high' } },
+      // Anthropic
+      'claude-opus-4-20250514':      { contextWindow: 200000, maxTokens: 32000, reasoning: true },
+      'claude-sonnet-4-20250514':    { contextWindow: 200000, maxTokens: 16000, reasoning: true },
+      'claude-sonnet-4-5-20250514':  { contextWindow: 200000, maxTokens: 16000, reasoning: true },
+      'claude-haiku-3-5-20241022':   { contextWindow: 200000, maxTokens: 8192, reasoning: false },
+      // DeepSeek
+      'deepseek-chat':     { contextWindow: 64000, maxTokens: 8192, reasoning: false },
+      'deepseek-reasoner': { contextWindow: 64000, maxTokens: 8192, reasoning: true },
+    };
   }
 
-  _openclawModelSet(modelId) {
-    const { spawn } = require('child_process');
-    const child = spawn('openclaw', ['models', 'set', modelId], {
-      shell: true,
-      windowsHide: true,
-      stdio: 'pipe'
-    });
-    child.stdout?.on('data', d => console.log(`[openclaw] ${d.toString().trim()}`));
-    child.stderr?.on('data', d => console.warn(`[openclaw] ${d.toString().trim()}`));
-    child.on('close', code => {
-      if (code === 0) {
-        console.log(`✅ 默认模型已更新: ${modelId}`);
-        this._loadConfig();
-      } else {
-        console.error(`❌ openclaw models set 失败 (exit ${code})`);
-      }
-    });
+  _enrichModelMeta(model) {
+    // 如果 API 已经返回了丰富数据（OpenRouter / Gemini），直接用
+    if (model.contextWindow && model.maxTokens) return model;
+
+    // 用 id 的最后一段匹配（兼容 openrouter 的 "openai/o3-mini" 格式）
+    const shortId = model.id.includes('/') ? model.id.split('/').pop() : model.id;
+    const known = ModelSwitcher.KNOWN_MODELS[shortId] || ModelSwitcher.KNOWN_MODELS[model.id];
+
+    if (known) {
+      if (!model.contextWindow) model.contextWindow = known.contextWindow;
+      if (!model.maxTokens) model.maxTokens = known.maxTokens;
+      if (model.reasoning === undefined) model.reasoning = known.reasoning;
+      if (!model.params && known.params) model.params = known.params;
+    }
+
+    return model;
   }
 
   // ==================== 名称/颜色/图标 ====================

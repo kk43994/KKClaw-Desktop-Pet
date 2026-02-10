@@ -38,13 +38,15 @@
         border-radius: 50%;
         overflow: hidden;
         z-index: 1;
-        transition: background 1.5s ease;
+        /* 优化：使用自定义贝塞尔曲线，更丝滑自然 */
+        transition: background 2.2s cubic-bezier(0.4, 0.0, 0.2, 1);
         background: linear-gradient(135deg, #ffb3b3, #fed6e3);
     }
     .fluid-blob {
         position: absolute;
         width: 130%; height: 130%; top: -15%; left: -15%;
-        transition: background 1.5s ease;
+        /* 优化：比主层稍快，制造层次感 */
+        transition: background 1.8s cubic-bezier(0.4, 0.0, 0.2, 1);
         background:
             radial-gradient(circle at 30% 30%, rgba(235,87,87,0.85), transparent 40%),
             radial-gradient(circle at 70% 65%, rgba(255,154,108,0.8), transparent 40%);
@@ -53,7 +55,8 @@
     .fluid-blob-2 {
         position: absolute;
         width: 110%; height: 110%; top: -5%; left: -5%;
-        transition: background 1.5s ease;
+        /* 优化：最慢层，产生深度错觉 */
+        transition: background 2.6s cubic-bezier(0.4, 0.0, 0.2, 1);
         background:
             radial-gradient(circle at 60% 30%, rgba(255,200,150,0.4), transparent 35%),
             radial-gradient(circle at 35% 70%, rgba(220,60,60,0.3), transparent 35%);
@@ -101,7 +104,10 @@
         position: absolute; z-index: 3;
         width: 14px; height: 8px; border-radius: 50%;
         background: rgba(255,130,130,0.25); filter: blur(3px);
-        pointer-events: none; transition: all 0.4s ease; opacity: 0.8;
+        pointer-events: none; 
+        /* 优化：使用更平滑的贝塞尔曲线 */
+        transition: background 1.5s cubic-bezier(0.4, 0.0, 0.2, 1), opacity 0.4s ease; 
+        opacity: 0.8;
     }
     .blush-l { top: 58%; left: 8%; }
     .blush-r { top: 58%; right: 8%; }
@@ -499,10 +505,24 @@ function setMood(mood) {
     if (!MOODS[mood]) mood = 'idle';
     const m = MOODS[mood];
     currentMood = mood;
+    
+    // 🎨 优化：分层渐变，制造视觉深度
     fluid.style.background = m.fluid;
-    blob1.style.background = m.b1; blob2.style.background = m.b2;
+    blob1.style.background = m.b1; 
+    blob2.style.background = m.b2;
+    
+    // 🎭 流体速度平滑过渡
     blob1.style.animationDuration = m.speed;
-    blob1.style.opacity = mood === 'sleepy' ? '0.6' : '1';
+    
+    // 🌫️ 优化：opacity 也要平滑过渡
+    if (mood === 'sleepy') {
+        blob1.style.transition = 'background 1.8s cubic-bezier(0.4, 0.0, 0.2, 1), opacity 2.5s cubic-bezier(0.4, 0.0, 0.2, 1)';
+        blob1.style.opacity = '0.6';
+    } else {
+        blob1.style.transition = 'background 1.8s cubic-bezier(0.4, 0.0, 0.2, 1), opacity 1.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
+        blob1.style.opacity = '1';
+    }
+    
     targetScale = m.scale; breathExtra = m.bounce;
     mouseTracking = (mood !== 'sleepy' && mood !== 'happy');
     if (talkInterval) { clearInterval(talkInterval); talkInterval = null; }
@@ -510,10 +530,19 @@ function setMood(mood) {
         let tog = false;
         talkInterval = setInterval(() => { tog=!tog; tog ? EXPR.talkBig() : EXPR.talking(); }, 250);
     } else { applyMoodEyes(); }
+    
+    // 💖 腮红也要丝滑过渡
     if (mood === 'happy') {
+        blushL.style.transition = 'background 1.5s cubic-bezier(0.4, 0.0, 0.2, 1)';
+        blushR.style.transition = 'background 1.5s cubic-bezier(0.4, 0.0, 0.2, 1)';
         blushL.style.background = 'rgba(255,120,120,0.4)';
         blushR.style.background = 'rgba(255,120,120,0.4)';
-    } else { blushL.style.background = ''; blushR.style.background = ''; }
+    } else { 
+        blushL.style.transition = 'background 1.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
+        blushR.style.transition = 'background 1.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
+        blushL.style.background = ''; 
+        blushR.style.background = ''; 
+    }
 }
 
 // ===== 待机微表情 =====
