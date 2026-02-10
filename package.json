@@ -1,6 +1,6 @@
 {
   "name": "claw-desktop-pet",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "🦞 企业级7×24稳定运行的桌面龙虾智能助手",
   "main": "main.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "electron": "^28.3.3"
   },
   "dependencies": {
+    "sqlite3": "^5.1.7",
     "ws": "^8.19.0"
   }
 }

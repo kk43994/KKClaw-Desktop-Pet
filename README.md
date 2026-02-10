@@ -2,7 +2,8 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.0.1-blue)
+![Updated](https://img.shields.io/badge/updated-2026--02--10-informational)
 ![CI](https://github.com/kk43994/claw-desktop-pet/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Stability](https://img.shields.io/badge/stability-7×24-success)
@@ -12,7 +13,7 @@
 
 集成 OpenClaw AI、MiniMax 语音克隆、流体玻璃球UI、桌面歌词效果
 
-[快速开始](#-快速开始) • [功能特性](#-核心亮点) • [更新日志](#-更新日志) • [文档](#-文档)
+[快速开始](#-快速开始) • [功能特性](#-核心亮点) • [更新日志](#-更新日志) • [模型热切换](#-模型热切换kkclaw-switch) • [文档](#-文档) • [加入社群](#-加入社群)
 
 </div>
 
@@ -236,6 +237,25 @@ npm start
 
 ## 📝 更新日志
 
+### v2.0.1 (2026-02-10) 🔁 KKClaw Switch 热切换修复 + 文档完善
+
+<details>
+<summary>查看详情</summary>
+
+**修复/增强：**
+- 🔁 修复 KKClaw Switch → OpenClaw 同步的“热切换不生效”问题（重复 key 导致 JSON 解析失败）
+- 🧹 新增配置修复脚本：自动清理 `openclaw.json` 的重复 provider key（大小写冲突）
+- ⚡ 新增热切换脚本：一键读取当前 provider 并同步到 OpenClaw，支持 `--restart` 自动重启
+- 🧩 同步能力从“依赖本地 Gateway 路由”改为“脚本直连配置文件”，更稳定、更可排查
+- 📄 README/Pages 文档全面补充（版本号/日期、使用步骤、FAQ、社群入口）
+
+**相关文件：**
+- `SYNC-GUIDE.md`（同步流程说明）
+- `kkclaw-hotswitch.js`（热切换脚本）
+- `fix-openclaw-config.js`（重复 key 修复脚本）
+
+</details>
+
 ### v2.0.0 (2026-02-08) 🎨 空气感UI重构
 
 <details>
@@ -285,6 +305,51 @@ npm start
 - ✨ 智能语音系统
 
 </details>
+
+---
+
+---
+
+## 🔁 模型热切换（KKClaw Switch）
+
+桌面龙虾内置 **KKClaw Switch**（模型/Provider 管理面板）。你可以在 CC Switch / KKClaw Switch 切换 provider 后，一键同步到 OpenClaw 并重启，使新配置立即生效。
+
+### 快速用法
+
+```bash
+# 同步当前激活 provider 到 OpenClaw
+node kkclaw-hotswitch.js
+
+# 同步并自动重启 OpenClaw Gateway（推荐）
+node kkclaw-hotswitch.js --restart
+```
+
+### 常见坑（必看）
+- **PowerShell 不支持 `&&`**：请用 `;` 分隔命令
+- **openclaw.json 重复 key**：可能出现 `KKpinche/...` 和 `kkpinche/...` 大小写冲突，导致解析异常
+
+修复命令：
+```bash
+node fix-openclaw-config.js
+```
+
+详细流程见：`SYNC-GUIDE.md`
+
+---
+
+## 🧑‍🤝‍🧑 加入社群
+
+<img src="docs/images/ai-coding-qr.jpg" alt="AI coding group QR" width="260" />
+
+（二维码 7 天有效，过期我再补新图）
+
+---
+
+## ☕ 赞赏支持
+
+如果这个项目帮到了你，欢迎请作者喝杯咖啡，支持持续维护与功能迭代：
+
+<img src="docs/images/support-qr.jpg" alt="Support QR" width="260" />
 
 ---
 

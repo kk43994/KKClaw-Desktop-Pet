@@ -1,5 +1,24 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on Keep a Changelog, and this project loosely follows semantic versioning.
+
+
+## [2.0.1] - 2026-02-10
+
+### 🐛 Fixes
+- Fix KKClaw Switch -> OpenClaw sync failing due to duplicated provider keys (case-sensitive collisions)
+
+### ✨ Added
+- `kkclaw-hotswitch.js`: sync current active provider from KKClaw Switch and optionally restart OpenClaw (`--restart`)
+- `fix-openclaw-config.js`: repair helper for duplicated keys in `~/.openclaw/openclaw.json`
+
+### 📝 Docs
+- README and GitHub Pages refreshed: version/date, hot-switch guide, and community QR entry
+
+---
+
 ## [1.4.0] - 2026-02-07
 
 ### ✨ 新功能

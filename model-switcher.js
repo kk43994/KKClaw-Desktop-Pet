@@ -36,7 +36,7 @@ const PROVIDER_PRESETS = {
     name: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
     website: 'https://platform.openai.com',
-    api: 'openai-chat',
+    api: 'openai-completions',
     icon: '◎',
     color: '#10A37F',
     description: 'GPT 官方 API',
@@ -50,7 +50,7 @@ const PROVIDER_PRESETS = {
     name: 'Google AI',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     website: 'https://aistudio.google.com',
-    api: 'google-gemini',
+    api: 'openai-completions',
     icon: '✦',
     color: '#4285F4',
     description: 'Gemini 官方 API',
@@ -63,7 +63,7 @@ const PROVIDER_PRESETS = {
     name: 'DeepSeek',
     baseUrl: 'https://api.deepseek.com/v1',
     website: 'https://platform.deepseek.com',
-    api: 'openai-chat',
+    api: 'openai-completions',
     icon: '⬡',
     color: '#4D6BFE',
     description: 'DeepSeek 官方 API',
@@ -77,7 +77,7 @@ const PROVIDER_PRESETS = {
     name: 'OpenRouter',
     baseUrl: 'https://openrouter.ai/api/v1',
     website: 'https://openrouter.ai',
-    api: 'openai-chat',
+    api: 'openai-completions',
     icon: '⊕',
     color: '#6366F1',
     description: '多模型聚合中转',
@@ -91,7 +91,7 @@ const PROVIDER_PRESETS = {
     name: 'Z.ai GLM',
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
     website: 'https://z.ai',
-    api: 'openai-chat',
+    api: 'openai-completions',
     icon: 'Z',
     color: '#4361EE',
     description: '智谱 GLM 编码计划',
@@ -103,7 +103,7 @@ const PROVIDER_PRESETS = {
     name: 'Qwen Coder',
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     website: 'https://bailian.console.aliyun.com',
-    api: 'openai-chat',
+    api: 'openai-completions',
     icon: 'Q',
     color: '#6236FF',
     description: '通义千问百炼平台',
@@ -116,7 +116,7 @@ const PROVIDER_PRESETS = {
     name: 'Kimi For Coding',
     baseUrl: 'https://api.moonshot.cn/v1',
     website: 'https://www.kimi.com/coding/docs/',
-    api: 'openai-chat',
+    api: 'openai-completions',
     icon: 'K',
     color: '#000000',
     description: 'Kimi K2 编码模型',
@@ -128,7 +128,7 @@ const PROVIDER_PRESETS = {
     name: 'MiniMax',
     baseUrl: 'https://api.minimaxi.chat/v1',
     website: 'https://platform.minimaxi.com',
-    api: 'openai-chat',
+    api: 'openai-completions',
     icon: 'M',
     color: '#FF4040',
     description: 'MiniMax M2 模型',
@@ -149,11 +149,11 @@ const PROVIDER_PRESETS = {
   }
 };
 
-// ===== API 类型映射 =====
+// ===== API 类型映射（与 OpenClaw 兼容） =====
 const API_TYPES = {
   'anthropic-messages': { label: 'Anthropic Messages API', brands: ['Claude'] },
-  'openai-chat': { label: 'OpenAI Chat Completions', brands: ['GPT', 'DeepSeek', 'Qwen', 'Llama'] },
-  'google-gemini': { label: 'Google Gemini API', brands: ['Gemini'] },
+  'openai-completions': { label: 'OpenAI Chat Completions', brands: ['GPT', 'DeepSeek', 'Qwen', 'Llama', 'Gemini', 'GLM'] },
+  'openai-responses': { label: 'OpenAI Responses API', brands: ['GPT-5', 'Codex', 'o3', 'o4'] },
 };
 
 class ModelSwitcher {
@@ -199,7 +199,7 @@ class ModelSwitcher {
           name: providerName,
           baseUrl: providerConfig.baseUrl || '',
           apiKey: providerConfig.apiKey || '',
-          api: providerConfig.api || 'openai-chat',
+          api: providerConfig.api || 'anthropic-messages',
           models: providerConfig.models || [],
           icon: preset?.icon || providerName.substring(0, 1).toUpperCase(),
           color: preset?.color || '#888888',
@@ -249,9 +249,12 @@ class ModelSwitcher {
       if (nameLower.includes(key) || nameLower.includes(preset.name.toLowerCase())) {
         return preset;
       }
-      if (baseUrl && preset.baseUrl && baseUrl.includes(new URL(preset.baseUrl).hostname)) {
-        return preset;
-      }
+      try {
+        if (baseUrl && preset.baseUrl && baseUrl.includes(new URL(preset.baseUrl).hostname)) {
+          return preset;
+        }
+      } catch {}
+
     }
     
     // 通过 baseUrl 关键词匹配
@@ -272,11 +275,57 @@ class ModelSwitcher {
 
   _saveConfig(config) {
     fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2), 'utf8');
+    // 热映射: 同步写入 models.json
+    this._syncModelsJson(config);
+  }
+
+  _syncModelsJson(config) {
+    try {
+      const modelsPath = path.join(path.dirname(this.configPath), 'agents', 'main', 'agent', 'models.json');
+      const providers = config.models?.providers || {};
+      fs.writeFileSync(modelsPath, JSON.stringify({ providers }, null, 2), 'utf8');
+    } catch (err) {
+      console.warn('⚠️ models.json 同步失败:', err.message);
+    }
   }
 
   _readConfig() {
     const raw = fs.readFileSync(this.configPath, 'utf8');
     return JSON.parse(raw);
+  }
+
+  // ==================== API 类型自动检测 ====================
+
+  /**
+   * 根据 baseUrl 和模型 ID 自动检测 API 类型
+   * - anthropic.com / 含 claude 模型 → anthropic-messages
+   * - codex/gpt-5+ 模型 → openai-responses
+   * - 其他 OpenAI 兼容 → openai-completions
+   */
+  _detectApiType(baseUrl, modelId) {
+    const url = (baseUrl || '').toLowerCase();
+    const model = (modelId || '').toLowerCase();
+
+    // Anthropic 官方或含 claude 的中转
+    if (url.includes('anthropic')) return 'anthropic-messages';
+
+    // 模型名判断 claude → anthropic
+    if (model.includes('claude')) return 'anthropic-messages';
+
+    // Codex / GPT-5+ 系列用 Responses API
+    if (model.includes('codex') || model.includes('gpt-5')) return 'openai-responses';
+
+    // baseUrl 路径含 /responses
+    if (url.includes('/responses')) return 'openai-responses';
+
+    // 默认 OpenAI Completions
+    if (url.includes('openai') || url.includes('openrouter') || url.includes('deepseek') ||
+        url.includes('dashscope') || url.includes('bigmodel') || url.includes('moonshot') ||
+        url.includes('minimax') || url.includes('googleapis')) {
+      return 'openai-completions';
+    }
+
+    return 'anthropic-messages';
   }
 
   // ==================== Provider 管理 ====================
@@ -290,14 +339,15 @@ class ModelSwitcher {
       throw new Error(`Provider "${name}" already exists. Use updateProvider() to modify.`);
     }
 
+    const detectedApi = opts.api || this._detectApiType(opts.baseUrl, '');
     const provider = {
       baseUrl: opts.baseUrl || '',
       apiKey: opts.apiKey || '',
-      api: opts.api || 'openai-chat',
+      api: detectedApi,
       models: (opts.models || []).map(m => ({
         id: m.id,
         name: m.name || m.id,
-        api: m.api || opts.api || 'openai-chat',
+        api: m.api || this._detectApiType(opts.baseUrl, m.id),
         reasoning: m.reasoning || false,
         input: m.input || ['text', 'image'],
         cost: m.cost || { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -493,6 +543,88 @@ class ModelSwitcher {
     return results;
   }
 
+  // ==================== 远程获取模型列表 ====================
+
+  async fetchModels(providerName) {
+    const provider = this.providers[providerName];
+    if (!provider || !provider.baseUrl) {
+      return { success: false, error: 'No base URL configured' };
+    }
+
+    try {
+      const url = new URL(provider.baseUrl);
+      const isHttps = url.protocol === 'https:';
+      const httpModule = isHttps ? https : http;
+
+      // 构建 /v1/models 请求路径
+      let modelsPath = url.pathname;
+      if (modelsPath.endsWith('/')) modelsPath = modelsPath.slice(0, -1);
+      // 如果路径已经包含版本号如 /v1，直接加 /models
+      if (/\/v\d+/.test(modelsPath)) {
+        modelsPath += '/models';
+      } else {
+        modelsPath += '/v1/models';
+      }
+
+      const data = await new Promise((resolve, reject) => {
+        const headers = { 'Content-Type': 'application/json' };
+        // Anthropic 用 x-api-key，OpenAI 兼容用 Authorization Bearer
+        if (provider.api === 'anthropic-messages') {
+          headers['x-api-key'] = provider.apiKey;
+          headers['anthropic-version'] = '2023-06-01';
+        } else {
+          headers['Authorization'] = `Bearer ${provider.apiKey}`;
+        }
+
+        const req = httpModule.request({
+          hostname: url.hostname,
+          port: url.port || (isHttps ? 443 : 80),
+          path: modelsPath,
+          method: 'GET',
+          headers,
+          timeout: 15000,
+        }, (res) => {
+          let body = '';
+          res.on('data', chunk => body += chunk);
+          res.on('end', () => {
+            try { resolve({ statusCode: res.statusCode, body: JSON.parse(body) }); }
+            catch { resolve({ statusCode: res.statusCode, body }); }
+          });
+        });
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+        req.end();
+      });
+
+      if (data.statusCode !== 200) {
+        return { success: false, error: `HTTP ${data.statusCode}` };
+      }
+
+      // 解析模型列表（兼容 OpenAI 和 Anthropic 格式）
+      let models = [];
+      const body = data.body;
+
+      if (body.data && Array.isArray(body.data)) {
+        // OpenAI 格式: { data: [{ id: "gpt-4o", ... }] }
+        models = body.data.map(m => ({
+          id: m.id,
+          name: m.name || m.id,
+        }));
+      } else if (Array.isArray(body)) {
+        models = body.map(m => ({
+          id: m.id || m.model,
+          name: m.name || m.display_name || m.id || m.model,
+        }));
+      }
+
+      console.log(`📡 ${providerName}: 获取到 ${models.length} 个模型`);
+      return { success: true, models };
+    } catch (err) {
+      console.error(`❌ 获取模型失败 ${providerName}:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
   // ==================== Model 管理 ====================
 
   addModel(providerName, model) {
@@ -509,7 +641,7 @@ class ModelSwitcher {
     provider.models.push({
       id: model.id,
       name: model.name || model.id,
-      api: model.api || provider.api,
+      api: model.api || this._detectApiType(provider.baseUrl, model.id),
       reasoning: model.reasoning || false,
       input: model.input || ['text', 'image'],
       cost: model.cost || { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -564,6 +696,42 @@ class ModelSwitcher {
     return this._applySwitch();
   }
 
+  async switchToProvider(providerName) {
+    // 如果该服务商没有模型，自动补上标准模型
+    const providerModels = this.models.filter(m => m.provider === providerName);
+    if (providerModels.length === 0) {
+      const provider = this.providers[providerName];
+      const api = provider?.api || 'anthropic-messages';
+      let stdModels;
+      if (api === 'openai-responses') {
+        stdModels = [
+          { id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex' },
+          { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex' },
+        ];
+      } else if (api === 'openai-completions') {
+        stdModels = [
+          { id: 'gpt-4o', name: 'GPT-4o' },
+          { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+        ];
+      } else {
+        stdModels = [
+          { id: 'claude-opus-4-6', name: 'Claude Opus 4.6' },
+          { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
+          { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
+        ];
+      }
+      for (const m of stdModels) {
+        this.addModel(providerName, m);
+      }
+    }
+    const firstModel = this.models.find(m => m.provider === providerName);
+    if (!firstModel) {
+      console.error(`❌ 服务商 ${providerName} 无可用模型`);
+      return null;
+    }
+    return this.switchTo(firstModel.id);
+  }
+
   async switchTo(modelId) {
     const idx = this.models.findIndex(m => m.id === modelId || m.modelId === modelId);
     if (idx === -1) {
@@ -578,32 +746,111 @@ class ModelSwitcher {
     this.currentModel = this.models[this.currentIndex];
     console.log(`🔄 切换模型 → ${this.currentModel.shortName} (${this.currentModel.id})`);
 
-    try {
-      await this._gatewayRequest('POST', '/api/sessions/main/model', {
-        model: this.currentModel.id
-      });
-      console.log(`✅ Gateway 模型切换成功: ${this.currentModel.shortName}`);
-    } catch (err) {
-      console.warn(`⚠️ Gateway API 切换失败, 尝试 config patch...`, err.message);
-      try {
-        await this._patchPrimaryModel(this.currentModel.id);
-        console.log(`✅ 配置文件已更新: ${this.currentModel.shortName}`);
-      } catch (err2) {
-        console.error(`❌ 模型切换完全失败:`, err2.message);
-      }
-    }
-    
+    // 1. 热切换当前 session（立即生效，不重启）
+    this._gatewaySessionPatch(this.currentModel.id);
+    // 2. 更新持久化默认模型配置
+    this._openclawModelSet(this.currentModel.id);
+
     this._notifyListeners();
     return this.currentModel;
   }
 
-  async _patchPrimaryModel(modelId) {
-    const config = this._readConfig();
-    if (!config.agents) config.agents = {};
-    if (!config.agents.defaults) config.agents.defaults = {};
-    if (!config.agents.defaults.model) config.agents.defaults.model = {};
-    config.agents.defaults.model.primary = modelId;
-    this._saveConfig(config);
+  _gatewaySessionPatch(modelId) {
+    const { spawn } = require('child_process');
+    console.log(`🔥 热切换所有 sessions → ${modelId}`);
+
+    // 先获取所有 session key，再逐个 patch
+    const listChild = spawn('openclaw', ['gateway', 'call', 'sessions.list'], {
+      shell: true,
+      windowsHide: true,
+      stdio: 'pipe'
+    });
+
+    let listOutput = '';
+    listChild.stdout?.on('data', d => { listOutput += d.toString(); });
+    listChild.stderr?.on('data', d => console.warn(`[sessions.list] ${d.toString().trim()}`));
+    listChild.on('close', code => {
+      if (code !== 0) {
+        console.warn(`⚠️ sessions.list exit ${code}, 回退到 patch key=main`);
+        this._patchSingleSession('main', modelId);
+        return;
+      }
+
+      // 解析 session keys — stdout 可能混入 plugin 日志行，
+      // 需要提取 JSON 部分（从第一个 { 到最后一个 }）
+      let sessions = [];
+      try {
+        const jsonStart = listOutput.indexOf('{');
+        const jsonEnd = listOutput.lastIndexOf('}');
+        if (jsonStart === -1 || jsonEnd === -1) throw new Error('no JSON found');
+        const jsonStr = listOutput.substring(jsonStart, jsonEnd + 1);
+        const parsed = JSON.parse(jsonStr);
+        if (Array.isArray(parsed)) {
+          sessions = parsed;
+        } else if (parsed.result && Array.isArray(parsed.result)) {
+          sessions = parsed.result;
+        } else if (parsed.sessions && Array.isArray(parsed.sessions)) {
+          sessions = parsed.sessions;
+        }
+      } catch (e) {
+        console.warn('⚠️ sessions.list 解析失败:', e.message);
+      }
+
+      // 提取 key 列表
+      const keys = sessions
+        .map(s => s.key || s.id || s)
+        .filter(k => typeof k === 'string' && k.length > 0);
+
+      if (keys.length === 0) {
+        console.warn('⚠️ 未获取到 session，回退 patch key=main');
+        this._patchSingleSession('main', modelId);
+        return;
+      }
+
+      console.log(`📋 发现 ${keys.length} 个 session，逐个 patch: ${keys.join(', ')}`);
+      for (const key of keys) {
+        this._patchSingleSession(key, modelId);
+      }
+    });
+  }
+
+  _patchSingleSession(sessionKey, modelId) {
+    const { spawn } = require('child_process');
+    const params = JSON.stringify({ key: sessionKey, model: modelId });
+    const child = spawn('openclaw', ['gateway', 'call', 'sessions.patch', '--params', params], {
+      shell: true,
+      windowsHide: true,
+      stdio: 'pipe'
+    });
+    child.stdout?.on('data', d => {
+      const s = d.toString().trim();
+      if (s.includes('"ok": true') || s.includes('"ok":true')) {
+        console.log(`✅ Session [${sessionKey}] 热切换成功: ${modelId}`);
+      }
+    });
+    child.stderr?.on('data', d => console.warn(`[session-patch ${sessionKey}] ${d.toString().trim()}`));
+    child.on('close', code => {
+      if (code !== 0) console.warn(`⚠️ session.patch [${sessionKey}] exit ${code}`);
+    });
+  }
+
+  _openclawModelSet(modelId) {
+    const { spawn } = require('child_process');
+    const child = spawn('openclaw', ['models', 'set', modelId], {
+      shell: true,
+      windowsHide: true,
+      stdio: 'pipe'
+    });
+    child.stdout?.on('data', d => console.log(`[openclaw] ${d.toString().trim()}`));
+    child.stderr?.on('data', d => console.warn(`[openclaw] ${d.toString().trim()}`));
+    child.on('close', code => {
+      if (code === 0) {
+        console.log(`✅ 默认模型已更新: ${modelId}`);
+        this._loadConfig();
+      } else {
+        console.error(`❌ openclaw models set 失败 (exit ${code})`);
+      }
+    });
   }
 
   // ==================== 名称/颜色/图标 ====================
@@ -621,6 +868,13 @@ class ModelSwitcher {
       'claude-haiku-4-5': 'Haiku 4.5',
       'claude-haiku-4': 'Haiku 4',
       'claude-haiku-3-5': 'Haiku 3.5',
+      'gpt-5.3-codex': 'GPT-5.3 Codex',
+      'gpt-5.1-codex-max': 'GPT-5.1 Max',
+      'gpt-5.1-codex-mini': 'GPT-5.1 Mini',
+      'gpt-5.1-codex': 'GPT-5.1 Codex',
+      'gpt-5-codex': 'GPT-5 Codex',
+      'gpt-5.1-2025-11-13': 'GPT-5.1',
+      'gpt-5-2025-08-07': 'GPT-5',
       'gpt-4o-mini': 'GPT-4o Mini',
       'gpt-4o': 'GPT-4o',
       'gpt-4-turbo': 'GPT-4 Turbo',
@@ -650,6 +904,8 @@ class ModelSwitcher {
     if (id.includes('opus')) return '#E8A838';
     if (id.includes('sonnet')) return '#7C6BF0';
     if (id.includes('haiku')) return '#4ECDC4';
+    if (id.includes('codex')) return '#19C37D';
+    if (id.includes('gpt-5')) return '#10A37F';
     if (id.includes('o3') || id.includes('o4')) return '#FF6B9D';
     if (id.includes('gpt-4o-mini')) return '#74AA9C';
     if (id.includes('gpt')) return '#10A37F';
@@ -668,6 +924,12 @@ class ModelSwitcher {
     if (id.includes('opus')) return 'OP';
     if (id.includes('sonnet')) return 'SN';
     if (id.includes('haiku')) return 'HK';
+    if (id.includes('codex-max')) return '5M';
+    if (id.includes('codex-mini')) return '5m';
+    if (id.includes('codex')) return '5C';
+    if (id.includes('gpt-5.3')) return '53';
+    if (id.includes('gpt-5.1')) return '51';
+    if (id.includes('gpt-5')) return 'G5';
     if (id.includes('o3')) return 'o3';
     if (id.includes('o4')) return 'o4';
     if (id.includes('gpt-4o-mini')) return '4m';
@@ -687,35 +949,6 @@ class ModelSwitcher {
   }
 
   // ==================== 工具方法 ====================
-
-  _gatewayRequest(method, reqPath, body = null) {
-    return new Promise((resolve, reject) => {
-      const options = {
-        hostname: '127.0.0.1',
-        port: this.gatewayPort,
-        path: reqPath,
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.gatewayToken}`
-        },
-        timeout: 5000
-      };
-
-      const req = http.request(options, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          try { resolve(JSON.parse(data)); } catch { resolve(data); }
-        });
-      });
-
-      req.on('error', reject);
-      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
-      if (body) req.write(JSON.stringify(body));
-      req.end();
-    });
-  }
 
   onChange(callback) {
     this.listeners.push(callback);

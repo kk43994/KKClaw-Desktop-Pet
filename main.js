@@ -481,6 +481,12 @@ async function createWindow() {
     }
   });
   
+  // 监听外部命令：打开模型管理面板
+  desktopNotifier.on('open-model-settings', () => {
+    console.log('🔧 收到外部命令: 打开模型管理面板');
+    openModelSettings();
+  });
+
   // 监听消息同步事件
   messageSync.on('new_message', (msg) => {
     if (mainWindow) {
@@ -749,6 +755,119 @@ async function createWindow() {
 function rebuildTrayMenu() {
   if (!tray || !modelSwitcher) return;
   tray.setToolTip(`Claw 🦞 | ${modelSwitcher.getStatusText()}`);
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示/隐藏',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: `🔄 模型: ${modelSwitcher.getStatusText()}`,
+      submenu: [
+        ...modelSwitcher.getTrayMenuItems(),
+        { type: 'separator' },
+        {
+          label: '⚙️ 模型管理面板',
+          click: () => { openModelSettings(); }
+        },
+        {
+          label: '🔃 刷新模型列表',
+          click: () => {
+            modelSwitcher.reload();
+            rebuildTrayMenu();
+            showServiceNotification('模型列表已刷新', `共 ${modelSwitcher.getModels().length} 个模型`);
+          }
+        }
+      ]
+    },
+    { type: 'separator' },
+    {
+      label: '🔧 服务管理',
+      submenu: [
+        {
+          label: '📊 服务状态',
+          click: () => {
+            const status = serviceManager.getStatus();
+            const gatewayStatus = status.gateway.status === 'running' ? '✅ 运行中' : '❌ 已停止';
+            const uptime = serviceManager.formatUptime(serviceManager.getUptime('gateway'));
+            showServiceNotification('OpenClaw 服务状态', `Gateway: ${gatewayStatus}\n运行时间: ${uptime}`);
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '▶️ 启动 Gateway',
+          click: async () => {
+            showServiceNotification('正在启动...', 'OpenClaw Gateway');
+            const result = await serviceManager.startGateway();
+            if (result.success) showServiceNotification('启动成功', 'OpenClaw Gateway 已启动');
+            else showServiceNotification('启动失败', result.error || '未知错误');
+          }
+        },
+        {
+          label: '⏹️ 停止 Gateway',
+          click: async () => {
+            showServiceNotification('正在停止...', 'OpenClaw Gateway');
+            await serviceManager.stopGateway();
+            showServiceNotification('已停止', 'OpenClaw Gateway');
+          }
+        },
+        {
+          label: '🔄 重启 Gateway',
+          click: async () => {
+            showServiceNotification('正在重启...', 'OpenClaw Gateway');
+            const result = await serviceManager.restartGateway();
+            if (result.success) showServiceNotification('重启成功', 'OpenClaw Gateway 已重新启动');
+            else showServiceNotification('重启失败', result.error || '未知错误');
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '📋 查看日志',
+          click: () => {
+            const logs = serviceManager.getRecentLogs(10);
+            const logText = logs.map(l => `[${l.level}] ${l.message}`).join('\n');
+            showServiceNotification('最近日志', logText || '暂无日志');
+          }
+        }
+      ]
+    },
+    {
+      label: '🌐 打开控制台',
+      click: () => {
+        const token = getGatewayToken();
+        shell.openExternal(`http://127.0.0.1:18789/?token=${token}`);
+      }
+    },
+    {
+      label: '设置',
+      click: () => {}
+    },
+    { type: 'separator' },
+    {
+      label: '🔄 恢复 Session',
+      click: async () => {
+        showServiceNotification('正在恢复...', '清理飞书会话缓存');
+        try {
+          const result = await mainWindow.webContents.executeJavaScript(
+            `require('electron').ipcRenderer.invoke('refresh-session')`
+          );
+          showServiceNotification('恢复成功', `已清理 ${result.sessions?.length || 0} 个会话`);
+        } catch(e) {
+          showServiceNotification('恢复失败', e.message);
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: () => { app.quit(); }
+    }
+  ]);
+  tray.setContextMenu(contextMenu);
 }
 
 /**
@@ -769,12 +888,14 @@ function openModelSettings() {
     minimizable: true,
     maximizable: false,
     autoHideMenuBar: true,
+    backgroundColor: '#0f0f17',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   });
   
+  modelSettingsWindow.setMenuBarVisibility(false);
   modelSettingsWindow.loadFile('model-settings.html');
   
   modelSettingsWindow.on('closed', () => {
@@ -832,6 +953,18 @@ ipcMain.on('move-window', (event, { x, y }) => {
 
 ipcMain.on('quit-app', () => {
   app.quit();
+});
+
+// 模型设置窗口控制
+ipcMain.on('model-settings-minimize', () => {
+  if (modelSettingsWindow && !modelSettingsWindow.isDestroyed()) {
+    modelSettingsWindow.minimize();
+  }
+});
+ipcMain.on('model-settings-close', () => {
+  if (modelSettingsWindow && !modelSettingsWindow.isDestroyed()) {
+    modelSettingsWindow.close();
+  }
 });
 
 // 三击查看历史消息
@@ -1101,6 +1234,11 @@ ipcMain.handle('model-switch', async (event, modelId) => {
   return await modelSwitcher.switchTo(modelId);
 });
 
+ipcMain.handle('model-switch-provider', async (event, providerName) => {
+  if (!modelSwitcher) return null;
+  return await modelSwitcher.switchToProvider(providerName);
+});
+
 ipcMain.handle('model-next', async () => {
   if (!modelSwitcher) return null;
   return await modelSwitcher.next();
@@ -1191,6 +1329,69 @@ ipcMain.handle('model-remove-model', async (event, providerName, modelId) => {
     modelSwitcher.removeModel(providerName, modelId);
     return { success: true };
   } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('model-fetch-models', async (event, providerName) => {
+  if (!modelSwitcher) return { success: false, error: 'not initialized' };
+  return await modelSwitcher.fetchModels(providerName);
+});
+
+
+// 📥 从 CC Switch 导入
+ipcMain.handle('import-from-ccswitch', async () => {
+  const path = require('path');
+  const HOME = process.env.HOME || process.env.USERPROFILE;
+  const DB_PATH = path.join(HOME, '.cc-switch', 'cc-switch.db');
+
+  try {
+    if (!modelSwitcher) return { error: 'Model switcher not initialized' };
+
+    const sqlite3 = require('sqlite3').verbose();
+    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+
+    const providers = await new Promise((resolve, reject) => {
+      db.all(
+        `SELECT id, name, settings_config FROM providers WHERE app_type = 'claude' AND id != 'default'`,
+        [],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    });
+
+    db.close();
+
+    let importCount = 0;
+    for (const row of providers) {
+      try {
+        const settings = JSON.parse(row.settings_config);
+        const env = settings.env || {};
+        const baseUrl = env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
+        const apiKey = env.ANTHROPIC_AUTH_TOKEN || '';
+
+        // 生成标准模型列表
+        const models = [
+          { id: 'claude-opus-4-6', name: 'Claude Opus 4.6' },
+          { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
+          { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' }
+        ];
+
+        modelSwitcher.addProvider(row.name, { baseUrl, apiKey, api: 'anthropic-messages', models });
+        importCount++;
+        console.log(`✓ 导入: ${row.name}`);
+      } catch (err) {
+        console.error(`✗ 导入失败 ${row.name}:`, err.message);
+      }
+    }
+
+    console.log(`✅ 从 CC Switch 导入了 ${importCount} 个服务商`);
+    return { success: true, providersCount: importCount };
+
+  } catch (err) {
+    console.error('❌ 导入失败:', err);
     return { success: false, error: err.message };
   }
 });
