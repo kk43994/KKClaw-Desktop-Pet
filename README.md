@@ -1,4 +1,4 @@
-# 🦞 Claw Desktop Pet
+﻿# 🦞 Claw Desktop Pet
 
 <div align="center">
 
@@ -11,7 +11,7 @@ A production-minded, transparent Electron desktop companion for OpenClaw.
 ![Version](https://img.shields.io/badge/version-2.0.2-blue)
 ![Updated](https://img.shields.io/badge/updated-2026--02--10-informational)
 ![CI](https://github.com/kk43994/claw-desktop-pet/actions/workflows/ci.yml/badge.svg)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-Personal%20Use%20%7C%20No%20Resale-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 
 </div>
@@ -235,3 +235,15 @@ More details: `SYNC-GUIDE.md`
 If this project helps you, consider supporting ongoing maintenance:
 
 <img src="docs/images/support-qr.jpg" alt="Support QR" width="260" />
+
+
+---
+
+## Commercial Use
+
+EN: Commercial use, resale, paid redistribution, or paid hosting/support requires a separate commercial license.
+
+中文：任何形式的商用、对外售卖、付费分发、付费托管/代部署/技术支持，均需要单独商业授权。
+
+Contact: open a GitHub Issue or reach out via community channels.
+
