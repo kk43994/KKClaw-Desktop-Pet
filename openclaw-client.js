@@ -1,6 +1,21 @@
 // OpenClaw 连接模块
+const path = require('path');
+const fs = require('fs');
+
 const OPENCLAW_HOST = 'http://127.0.0.1:18789';
-const OPENCLAW_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || 'f341263d57a0efcbc83c69c6d9e2b2e0f885aaacb35572dd';
+
+// 从 openclaw.json 自动读取 token
+function getOpenClawToken() {
+    if (process.env.OPENCLAW_GATEWAY_TOKEN) return process.env.OPENCLAW_GATEWAY_TOKEN;
+    try {
+        const configPath = path.join(process.env.HOME || process.env.USERPROFILE, '.openclaw', 'openclaw.json');
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        return config.gateway?.auth?.token || '';
+    } catch (e) {
+        return '';
+    }
+}
+const OPENCLAW_TOKEN = getOpenClawToken();
 
 class OpenClawClient {
     constructor() {

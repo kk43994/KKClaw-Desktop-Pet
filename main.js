@@ -28,12 +28,12 @@ function getGatewayConfig() {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     return {
       port: config.gateway?.port || 18789,
-      token: config.gateway?.auth?.token || 'f341263d57a0efcbc83c69c6d9e2b2e0f885aaacb35572dd'
+      token: config.gateway?.auth?.token || ''
     };
   } catch (err) {
     return {
       port: 18789,
-      token: 'f341263d57a0efcbc83c69c6d9e2b2e0f885aaacb35572dd'
+      token: ''
     };
   }
 }

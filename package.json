@@ -1,13 +1,15 @@
 {
   "name": "kkclaw-desktop-pet",
   "version": "2.0.3",
-  "description": "🦞 KKClaw Desktop Pet - 企业级7×24稳定运行的桌面龙虾智能助手",
+  "description": "🦞 KKClaw Desktop Pet - AI-powered desktop lobster companion with voice, monitoring & smart interactions",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win --x64",
     "shortcut": "node create-shortcut.js",
-    "kill": "taskkill /IM electron.exe /F 2>nul || echo 没有运行中的实例"
+    "kill": "taskkill /IM electron.exe /F 2>nul || echo No running instance"
   },
   "keywords": [
     "desktop-pet",
@@ -21,12 +23,69 @@
     "auto-restart",
     "smart-voice"
   ],
-  "author": "zhouk (kk43994)",
+  "author": "kk43994",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.3.3"
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
   },
   "dependencies": {
     "ws": "^8.19.0"
+  },
+  "build": {
+    "appId": "com.kk43994.kkclaw-desktop-pet",
+    "productName": "KKClaw Desktop Pet",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": ["dir", "nsis"],
+      "icon": "icon.ico",
+      "artifactName": "${productName}-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "KKClaw Desktop Pet"
+    },
+    "files": [
+      "**/*",
+      "!**/*.md",
+      "!docs-dev/**",
+      "!docs/**",
+      "!tests/**",
+      "!scripts/**",
+      "!archive/**",
+      "!screenshots/**",
+      "!temp/**",
+      "!work-logs/**",
+      "!clawhub-package/**",
+      "!.gitignore",
+      "!.git/**",
+      "!.github/**",
+      "!.claude/**",
+      "!pet-config.json",
+      "!*.credentials",
+      "!config.local.json",
+      "!test-*.js",
+      "!fix-*.js",
+      "!try-*.js",
+      "!simple-*.js",
+      "!detailed-*.js",
+      "!check-*.js",
+      "!verify-*.js",
+      "!register-*.js",
+      "!post-to-*.js",
+      "!reply-*.js",
+      "!update-*.js",
+      "!browse-*.js",
+      "!engage-*.js",
+      "!search-*.js",
+      "!monitor-*.js",
+      "!get-*.js",
+      "!batch-*.js"
+    ]
   }
 }

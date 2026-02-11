@@ -35,11 +35,8 @@ class ScreenshotSystem {
             // 方案1: 使用 Python desktop-control 技能
             const pythonScript = `
 import sys
-sys.path.append(r'C:\\Users\\zhouk\\openclaw-data\\skills\\desktop-control')
-from __init__ import DesktopController
-
-dc = DesktopController()
-screenshot = dc.screenshot()
+import pyautogui
+screenshot = pyautogui.screenshot()
 screenshot.save(r'${filepath.replace(/\\/g, '\\\\')}')
 print('SUCCESS')
 `;
@@ -140,12 +137,8 @@ try {
         const filepath = path.join(this.screenshotDir, filename);
 
         const pythonScript = `
-import sys
-sys.path.append(r'C:\\Users\\zhouk\\openclaw-data\\skills\\desktop-control')
-from __init__ import DesktopController
-
-dc = DesktopController()
-screenshot = dc.screenshot(region=(${x}, ${y}, ${width}, ${height}))
+import pyautogui
+screenshot = pyautogui.screenshot(region=(${x}, ${y}, ${width}, ${height}))
 screenshot.save(r'${filepath.replace(/\\/g, '\\\\')}')
 print('SUCCESS')
 `;
