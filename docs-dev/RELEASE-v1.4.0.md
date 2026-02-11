@@ -53,9 +53,9 @@
 
 ## 🔗 链接
 
-- **GitHub仓库:** https://github.com/kk43994/claw-desktop-pet
-- **发布页面:** https://github.com/kk43994/claw-desktop-pet/releases/tag/v1.4.0
-- **对比变更:** https://github.com/kk43994/claw-desktop-pet/compare/v1.3.0...v1.4.0
+- **GitHub仓库:** https://github.com/kk43994/KKClaw-Desktop-Pet
+- **发布页面:** https://github.com/kk43994/KKClaw-Desktop-Pet/releases/tag/v1.4.0
+- **对比变更:** https://github.com/kk43994/KKClaw-Desktop-Pet/compare/v1.3.0...v1.4.0
 
 ---
 
@@ -63,15 +63,15 @@
 
 ### 克隆仓库
 ```bash
-git clone https://github.com/kk43994/claw-desktop-pet.git
-cd claw-desktop-pet
+git clone https://github.com/kk43994/KKClaw-Desktop-Pet.git
+cd KKClaw-Desktop-Pet
 npm install
 npm start
 ```
 
 ### 下载特定版本
 ```bash
-git clone --branch v1.4.0 https://github.com/kk43994/claw-desktop-pet.git
+git clone --branch v1.4.0 https://github.com/kk43994/KKClaw-Desktop-Pet.git
 ```
 
 ---

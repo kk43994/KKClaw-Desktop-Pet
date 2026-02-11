@@ -9,7 +9,7 @@ Claw Desktop Pet v1.3.0 - 企业级7×24智能助手
 
 ### GitHub仓库
 ```
-https://github.com/kk43994/claw-desktop-pet
+https://github.com/kk43994/KKClaw-Desktop-Pet
 ```
 
 ### 项目简介（一句话）
@@ -114,8 +114,8 @@ Claw Desktop Pet 是一个可爱又强大的桌面AI助手，不仅具备传统�
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/kk43994/claw-desktop-pet.git
-cd claw-desktop-pet
+git clone https://github.com/kk43994/KKClaw-Desktop-Pet.git
+cd KKClaw-Desktop-Pet
 
 # 2. 安装依赖
 npm install
@@ -152,7 +152,7 @@ npm start
 
 ### 主界面截图
 ```
-https://raw.githubusercontent.com/kk43994/claw-desktop-pet/master/docs/images/screenshot-1.png
+https://raw.githubusercontent.com/kk43994/KKClaw-Desktop-Pet/master/docs/images/screenshot-1.png
 ```
 
 ### 系统架构图
@@ -175,13 +175,13 @@ https://raw.githubusercontent.com/kk43994/claw-desktop-pet/master/docs/images/sc
 
 ## 📚 完整文档链接
 
-- **README:** https://github.com/kk43994/claw-desktop-pet#readme
-- **发布说明:** https://github.com/kk43994/claw-desktop-pet/blob/master/RELEASE-v1.3.0.md
-- **错误处理文档:** https://github.com/kk43994/claw-desktop-pet/blob/master/ERROR-HANDLING.md
-- **自动重启文档:** https://github.com/kk43994/claw-desktop-pet/blob/master/AUTO-RESTART.md
-- **性能监控文档:** https://github.com/kk43994/claw-desktop-pet/blob/master/MONITORING.md
-- **智能语音文档:** https://github.com/kk43994/claw-desktop-pet/blob/master/SMART-VOICE.md
-- **缓存清理文档:** https://github.com/kk43994/claw-desktop-pet/blob/master/CACHE-CLEANUP.md
+- **README:** https://github.com/kk43994/KKClaw-Desktop-Pet#readme
+- **发布说明:** https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/RELEASE-v1.3.0.md
+- **错误处理文档:** https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/ERROR-HANDLING.md
+- **自动重启文档:** https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/AUTO-RESTART.md
+- **性能监控文档:** https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/MONITORING.md
+- **智能语音文档:** https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/SMART-VOICE.md
+- **缓存清理文档:** https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/CACHE-CLEANUP.md
 
 ---
 
@@ -238,15 +238,15 @@ https://raw.githubusercontent.com/kk43994/claw-desktop-pet/master/docs/images/sc
 - 分享使用经验
 
 ### 获取帮助
-- GitHub Issues: https://github.com/kk43994/claw-desktop-pet/issues
-- 完整文档: https://github.com/kk43994/claw-desktop-pet#readme
+- GitHub Issues: https://github.com/kk43994/KKClaw-Desktop-Pet/issues
+- 完整文档: https://github.com/kk43994/KKClaw-Desktop-Pet#readme
 
 ---
 
 ## 👨‍💻 作者信息
 
 - **GitHub:** kk43994
-- **项目:** https://github.com/kk43994/claw-desktop-pet
+- **项目:** https://github.com/kk43994/KKClaw-Desktop-Pet
 - **许可证:** MIT
 
 ---
@@ -264,7 +264,7 @@ Made with ❤️ and 🦞
 ## 📋 ClawHub提交检查清单
 
 - [x] 项目名称：Claw Desktop Pet v1.3.0
-- [x] GitHub仓库：https://github.com/kk43994/claw-desktop-pet
+- [x] GitHub仓库：https://github.com/kk43994/KKClaw-Desktop-Pet
 - [x] 一句话描述：已准备
 - [x] 详细描述：已准备
 - [x] 分类/标签：已准备

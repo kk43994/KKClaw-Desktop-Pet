@@ -5,7 +5,7 @@
 我想向OpenClaw社区介绍一个新项目：**Claw Desktop Pet** - 一个企业级7×24稳定运行的桌面龙虾智能助手。
 
 ## 🔗 GitHub 仓库
-https://github.com/kk43994/claw-desktop-pet
+https://github.com/kk43994/KKClaw-Desktop-Pet
 
 ## 🎯 这是什么？
 
@@ -47,8 +47,8 @@ Claw Desktop Pet 是一个基于Electron的桌面应用，集成了OpenClaw AI�
 
 ```bash
 # 克隆项目
-git clone https://github.com/kk43994/claw-desktop-pet.git
-cd claw-desktop-pet
+git clone https://github.com/kk43994/KKClaw-Desktop-Pet.git
+cd KKClaw-Desktop-Pet
 
 # 安装依赖
 npm install
@@ -74,8 +74,8 @@ openclaw gateway start
 
 ## 📚 文档
 
-- **README**: https://github.com/kk43994/claw-desktop-pet#readme
-- **发布说明**: https://github.com/kk43994/claw-desktop-pet/blob/master/RELEASE-v1.3.0.md
+- **README**: https://github.com/kk43994/KKClaw-Desktop-Pet#readme
+- **发布说明**: https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/RELEASE-v1.3.0.md
 - **技术文档**:
   - 错误处理: ERROR-HANDLING.md
   - 自动重启: AUTO-RESTART.md
@@ -85,7 +85,7 @@ openclaw gateway start
 
 ## 🎨 截图
 
-![桌面龙虾](https://raw.githubusercontent.com/kk43994/claw-desktop-pet/master/docs/images/screenshot-1.png)
+![桌面龙虾](https://raw.githubusercontent.com/kk43994/KKClaw-Desktop-Pet/master/docs/images/screenshot-1.png)
 
 ## 💡 为什么开发它？
 
@@ -116,7 +116,7 @@ openclaw gateway start
 
 ## 📬 联系
 
-- **GitHub**: https://github.com/kk43994/claw-desktop-pet
+- **GitHub**: https://github.com/kk43994/KKClaw-Desktop-Pet
 - **作者**: kk43994
 - **许可证**: MIT
 

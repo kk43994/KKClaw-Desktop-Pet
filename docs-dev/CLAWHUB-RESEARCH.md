@@ -29,7 +29,7 @@
 ### 我们的桌面龙虾更适合：
 
 1. **GitHub** ✅（已发布）
-   - https://github.com/kk43994/claw-desktop-pet
+   - https://github.com/kk43994/KKClaw-Desktop-Pet
    - 完整的README、文档、截图
    - 适合Electron应用
 

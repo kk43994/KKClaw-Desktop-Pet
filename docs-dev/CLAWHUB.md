@@ -56,8 +56,8 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/kk43994/claw-desktop-pet.git
-cd claw-desktop-pet
+git clone https://github.com/kk43994/KKClaw-Desktop-Pet.git
+cd KKClaw-Desktop-Pet
 
 # 2. 安装依赖
 npm install
@@ -89,14 +89,14 @@ npm start
 
 ## 链接
 
-- 🏠 **GitHub:** https://github.com/kk43994/claw-desktop-pet
-- 📖 **文档:** [完整技术文档](https://github.com/kk43994/claw-desktop-pet/blob/master/README.md)
-- 🚀 **发布说明:** [v1.3.0 Release](https://github.com/kk43994/claw-desktop-pet/blob/master/RELEASE-v1.3.0.md)
-- 📝 **更新日志:** [CHANGELOG](https://github.com/kk43994/claw-desktop-pet/blob/master/README.md#-更新日志)
+- 🏠 **GitHub:** https://github.com/kk43994/KKClaw-Desktop-Pet
+- 📖 **文档:** [完整技术文档](https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/README.md)
+- 🚀 **发布说明:** [v1.3.0 Release](https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/RELEASE-v1.3.0.md)
+- 📝 **更新日志:** [CHANGELOG](https://github.com/kk43994/KKClaw-Desktop-Pet/blob/master/README.md#-更新日志)
 
 ## 截图
 
-![桌面龙虾预览](https://raw.githubusercontent.com/kk43994/claw-desktop-pet/master/docs/images/screenshot-1.png)
+![桌面龙虾预览](https://raw.githubusercontent.com/kk43994/KKClaw-Desktop-Pet/master/docs/images/screenshot-1.png)
 
 ## 标签
 

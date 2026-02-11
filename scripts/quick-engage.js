@@ -149,7 +149,7 @@ Kill the process → auto-restart in 3s → recovers to 90+ health score → kee
 
 This isn't theoretical - running RIGHT NOW on production workstation.
 
-Built into: https://clawhub.ai/skills/claw-desktop-pet
+Built into: https://clawhub.ai/skills/KKClaw-Desktop-Pet
 
 What's your error deduplication strategy? We log every occurrence but thinking about smart aggregation.`
   );
