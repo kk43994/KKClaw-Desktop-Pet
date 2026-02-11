@@ -1,4 +1,4 @@
-# 🦞 KKClaw Desktop Pet
+﻿# 🦞 KKClaw Desktop Pet
 
 **给 OpenClaw 一个身体 — 透明桌面AI伴侣，情感语音、生动表情、空气感UI**
 
@@ -8,7 +8,7 @@
 
 *OpenClaw Core + Desktop Embodiment = A living interface with emotion, voice, and presence*
 
-[![Version](https://img.shields.io/badge/version-2.0.3-FF6B4A?style=for-the-badge&logo=github)](https://github.com/kk43994/KKClaw-Desktop-Pet/releases)
+[![Version](https://img.shields.io/badge/version-2.0.4-FF6B4A?style=for-the-badge&logo=github)](https://github.com/kk43994/KKClaw-Desktop-Pet/releases)
 [![Updated](https://img.shields.io/badge/updated-2026--02--10-34D399?style=for-the-badge)](https://github.com/kk43994/KKClaw-Desktop-Pet)
 [![CI](https://img.shields.io/github/actions/workflow/status/kk43994/KKClaw-Desktop-Pet/ci.yml?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/kk43994/KKClaw-Desktop-Pet/actions)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
@@ -548,7 +548,7 @@ node kkclaw-hotswitch.js --restart
 
 ## 📝 更新日志
 
-### [2.0.3] - 2026-02-10
+### [2.0.4] - 2026-02-10
 
 #### 新增
 - ✨ KKClaw Switch自动同步集成

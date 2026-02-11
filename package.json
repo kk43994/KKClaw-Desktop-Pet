@@ -1,6 +1,6 @@
 {
   "name": "kkclaw-desktop-pet",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "🦞 KKClaw Desktop Pet - AI-powered desktop lobster companion with voice, monitoring & smart interactions",
   "main": "main.js",
   "scripts": {

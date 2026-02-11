@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project loosely follows semantic versioning.
 
 
+## [2.0.4] - 2026-02-11
+
+### 🏗️ Major Refactor
+- **Project restructure**: 97 files reorganized — clean separation of concerns
+  - `voice/` — all TTS engines (MiniMax, CosyVoice, DashScope, Edge)
+  - `utils/` — auto-notify, progress-reporter, notify helpers
+  - `scripts/` — build scripts, shortcuts, screenshots
+  - `docs-dev/` — developer documentation (30+ files moved)
+  - `archive/` — deprecated voice files
+  - `tests/` — test files isolated
+
+### 🔒 Security
+- **Hardcoded credentials removed**: 5 files cleaned (API keys, tokens, personal paths)
+- **Safe runtime config**: `openclaw-client.js` reads tokens from `~/.openclaw/openclaw.json` at runtime
+- **Asar audit**: 0 leaks verified in packaged build
+
+### 🎨 Enhanced
+- **GitHub Pages v3.0**: Interactive 7-emotion ball demo, click-to-switch mood
+- **Brand upgrade**: KKClaw Desktop Pet branding throughout
+- **README rewrite**: Bilingual, screenshots gallery, architecture diagrams
+
+### 🔧 Added
+- **KKClaw Switch logger** (`utils/switch-logger.js`): 132-line provider switch tracking
+- **Service manager** (`service-manager.js`): Unified service lifecycle
+- **Project structure doc** (`PROJECT-STRUCTURE.md`): Complete file map
+- **Feature guide** (`docs-dev/FEATURE-GUIDE.md`): 1446-line comprehensive guide
+
+### 📦 Build
+- **Windows exe installer**: 74MB NSIS installer, electron-builder
+- **GitHub Release v2.0.3→v2.0.4**: Automated build pipeline
+- **Repo renamed**: `claw-desktop-pet` → `KKClaw-Desktop-Pet`
+
+### 🐛 Fixes
+- Fixed `model-switcher.js` import path error
+- Removed legacy files: `gateway-listener.js`, `lark-uploader.js`, `work-logger.js`, etc.
+- Cleaned up 7 test files that shouldn't ship in production
+
+---
+
 ## [2.0.3] - 2026-02-10
 
 ### 🎨 Enhanced

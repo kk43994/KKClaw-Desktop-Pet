@@ -295,8 +295,16 @@ async function createWindow() {
   });
 
   gatewayGuardian.on('restart-failed', (info) => {
-    console.log('❌ Gateway 重启失败:', info.error);
+    console.log(`❌ Gateway 重启失败 (连续 ${info.consecutiveRestartFailures || '?'} 次):`, info.error);
     workLogger.logError(`Gateway 重启失败: ${info.error}`);
+  });
+
+  gatewayGuardian.on('session-cleanup', (info) => {
+    console.log(`🧹 Guardian 自动清理 session: ${info.reason}`);
+    workLogger.log('action', `Guardian 自动清理 session lock: ${info.reason}`);
+    if (voiceSystem) {
+      voiceSystem.speak('检测到会话锁残留，已自动清理', { priority: 'normal' });
+    }
   });
 
   gatewayGuardian.on('recovered', () => {
