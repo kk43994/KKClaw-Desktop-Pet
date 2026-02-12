@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -23,7 +23,7 @@ The format is based on Keep a Changelog, and this project loosely follows semant
 
 ### 🎨 Enhanced
 - **GitHub Pages v3.0**: Interactive 7-emotion ball demo, click-to-switch mood
-- **Brand upgrade**: KKClaw Desktop Pet branding throughout
+- **Brand upgrade**: kkclaw branding throughout
 - **README rewrite**: Bilingual, screenshots gallery, architecture diagrams
 
 ### 🔧 Added

@@ -1,4 +1,4 @@
-﻿# 🦞 KKClaw Desktop Pet
+﻿# 🦞 kkclaw
 
 **给 OpenClaw 一个身体 — 透明桌面AI伴侣，情感语音、生动表情、空气感UI**
 
@@ -8,13 +8,13 @@
 
 *OpenClaw Core + Desktop Embodiment = A living interface with emotion, voice, and presence*
 
-[![Version](https://img.shields.io/badge/version-2.0.4-FF6B4A?style=for-the-badge&logo=github)](https://github.com/kk43994/KKClaw-Desktop-Pet/releases)
-[![Updated](https://img.shields.io/badge/updated-2026--02--10-34D399?style=for-the-badge)](https://github.com/kk43994/KKClaw-Desktop-Pet)
-[![CI](https://img.shields.io/github/actions/workflow/status/kk43994/KKClaw-Desktop-Pet/ci.yml?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/kk43994/KKClaw-Desktop-Pet/actions)
+[![Version](https://img.shields.io/badge/version-2.0.4-FF6B4A?style=for-the-badge&logo=github)](https://github.com/kk43994/kkclaw/releases)
+[![Updated](https://img.shields.io/badge/updated-2026--02--10-34D399?style=for-the-badge)](https://github.com/kk43994/kkclaw)
+[![CI](https://img.shields.io/github/actions/workflow/status/kk43994/kkclaw/ci.yml?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/kk43994/kkclaw/actions)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows_10/11-0078D6?style=for-the-badge&logo=windows)](https://github.com/kk43994/KKClaw-Desktop-Pet)
+[![Platform](https://img.shields.io/badge/platform-Windows_10/11-0078D6?style=for-the-badge&logo=windows)](https://github.com/kk43994/kkclaw)
 
-[🎥 **在线演示**](https://kk43994.github.io/KKClaw-Desktop-Pet/) | [📦 **下载最新版**](https://github.com/kk43994/KKClaw-Desktop-Pet/releases) | [📖 **文档**](#-文档) | [💬 **加入社群**](#-社群)
+[🎥 **在线演示**](https://kk43994.github.io/kkclaw/) | [📦 **下载最新版**](https://github.com/kk43994/kkclaw/releases) | [📖 **文档**](#-文档) | [💬 **加入社群**](#-社群)
 
 </div>
 
@@ -291,8 +291,8 @@ npx clawhub@latest install kk43994/desktop-pet
 #### 方式二：GitHub
 
 ```bash
-git clone https://github.com/kk43994/KKClaw-Desktop-Pet.git
-cd KKClaw-Desktop-Pet
+git clone https://github.com/kk43994/kkclaw.git
+cd kkclaw
 npm install
 npm start
 ```
@@ -340,7 +340,7 @@ npm start
 
 ### 在线资源
 
-- [🎥 **在线演示**](https://kk43994.github.io/KKClaw-Desktop-Pet/) — 可交互的球体demo
+- [🎥 **在线演示**](https://kk43994.github.io/kkclaw/) — 可交互的球体demo
 - [📦 **ClawHub主页**](https://clawhub.ai/kk43994/desktop-pet) — 国际社区
 - [📦 **OpenClaw-CN**](https://clawd.org.cn) — 中文社区技能市场
 
@@ -584,7 +584,7 @@ node kkclaw-hotswitch.js --restart
 | 🐦 **Discord** | [Friends of the Crustacean](https://discord.com/invite/clawd) | OpenClaw国际社区 |
 | 🇨🇳 **OpenClaw-CN** | [clawd.org.cn](https://clawd.org.cn) | 中文论坛 |
 | 📦 **ClawHub** | [clawhub.ai](https://clawhub.ai/kk43994/desktop-pet) | 技能市场 |
-| 💡 **GitHub Discussions** | [讨论区](https://github.com/kk43994/KKClaw-Desktop-Pet/discussions) | 提问、分享 |
+| 💡 **GitHub Discussions** | [讨论区](https://github.com/kk43994/kkclaw/discussions) | 提问、分享 |
 
 </div>
 
@@ -618,6 +618,6 @@ node kkclaw-hotswitch.js --restart
 
 **用❤️打造 by 小K**
 
-[🔝 回到顶部](#-kkclaw-desktop-pet)
+[🔝 回到顶部](#-kkclaw)
 
 </div>
