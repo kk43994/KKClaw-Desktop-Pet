@@ -417,11 +417,13 @@ class SmartVoiceSystem {
                     });
                     
                     // PowerShell 播放
-                    const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $mp = New-Object System.Windows.Media.MediaPlayer; $mp.Open('${audioFile}'); $mp.Play(); while($mp.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $mp.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $mp.Close()"`;
+                    const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $player = New-Object System.Windows.Media.MediaPlayer; $player.Open('${audioFile}'); $player.Play(); while($player.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $player.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $player.Close()"`;
                     await execAsync(playCmd, { timeout: 120000 });
                     
                 } catch (minimaxErr) {
                     console.error('[Voice] ❌ MiniMax 失败，回退到 DashScope:', minimaxErr.message);
+                    // 🚨 发送降级通知
+                    this.notifyDegradation('minimax', 'dashscope', minimaxErr.message);
                     // 回退到 DashScope
                     if (this.dashscope) {
                         try {
@@ -429,10 +431,12 @@ class SmartVoiceSystem {
                                 voice: this.dashscopeVoice,
                                 outputFile: outputFile
                             });
-                            const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $mp = New-Object System.Windows.Media.MediaPlayer; $mp.Open('${audioFile}'); $mp.Play(); while($mp.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $mp.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $mp.Close()"`;
+                            const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $player = New-Object System.Windows.Media.MediaPlayer; $player.Open('${audioFile}'); $player.Play(); while($player.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $player.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $player.Close()"`;
                             await execAsync(playCmd, { timeout: 120000 });
                         } catch (dashErr) {
                             console.error('[Voice] ❌ DashScope 也失败，回退到 Edge TTS:', dashErr.message);
+                            // 🚨 发送二级降级通知
+                            this.notifyDegradation('dashscope', 'edge', dashErr.message);
                             await this.speakWithEdgeTTS(cleanText, voiceConfig, outputFile);
                         }
                     } else {
@@ -448,11 +452,13 @@ class SmartVoiceSystem {
                     });
                     
                     // PowerShell 播放
-                    const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $mp = New-Object System.Windows.Media.MediaPlayer; $mp.Open('${audioFile}'); $mp.Play(); while($mp.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $mp.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $mp.Close()"`;
+                    const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $player = New-Object System.Windows.Media.MediaPlayer; $player.Open('${audioFile}'); $player.Play(); while($player.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $player.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $player.Close()"`;
                     await execAsync(playCmd, { timeout: 120000 });
                     
                 } catch (dashErr) {
                     console.error('[Voice] ❌ DashScope 失败，回退到 Edge TTS:', dashErr.message);
+                    // 🚨 发送降级通知
+                    this.notifyDegradation('dashscope', 'edge', dashErr.message);
                     // 回退到 Edge TTS
                     await this.speakWithEdgeTTS(cleanText, voiceConfig, outputFile);
                 }
@@ -578,7 +584,7 @@ class SmartVoiceSystem {
         
         await execAsync(ttsCmd, { timeout: 30000 });
         
-        const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $mp = New-Object System.Windows.Media.MediaPlayer; $mp.Open('${outputFile}'); $mp.Play(); while($mp.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $mp.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $mp.Close()"`;
+        const playCmd = `powershell -c "Add-Type -AssemblyName presentationCore; $player = New-Object System.Windows.Media.MediaPlayer; $player.Open('${outputFile}'); $player.Play(); while($player.NaturalDuration.HasTimeSpan -eq $false) { Start-Sleep -Milliseconds 100 }; $duration = $player.NaturalDuration.TimeSpan.TotalSeconds; Start-Sleep -Seconds $duration; $player.Close()"`;
         await execAsync(playCmd, { timeout: 120000 });
     }
 
@@ -604,6 +610,76 @@ class SmartVoiceSystem {
             this.dashscope.voice = voice;
         }
         console.log(`[Voice] 🎭 DashScope 音色切换为: ${voice}`);
+    }
+
+    /**
+     * 🚨 发送降级通知到 OpenClaw
+     */
+    async notifyDegradation(fromEngine, toEngine, errorMessage) {
+        try {
+            const https = require('https');
+            const http = require('http');
+            
+            // 判断错误原因
+            let reason = '未知错误';
+            let suggestion = '';
+            
+            if (errorMessage.includes('quota') || errorMessage.includes('balance') || errorMessage.includes('insufficient')) {
+                reason = '额度用完';
+                suggestion = `${fromEngine === 'minimax' ? 'MiniMax' : 'DashScope'} API 额度已用完，请前往官网充值续费`;
+            } else if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT') || errorMessage.includes('ECONNREFUSED')) {
+                reason = '网络超时';
+                suggestion = '网络连接失败，请检查网络状态';
+            } else if (errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('Unauthorized')) {
+                reason = 'API Key 无效';
+                suggestion = '请检查 API Key 是否正确';
+            } else if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+                reason = '请求频率过高';
+                suggestion = '触发限流，请稍后再试';
+            } else {
+                reason = 'API 调用失败';
+                suggestion = errorMessage.substring(0, 100);
+            }
+            
+            const message = `🚨 语音引擎降级通知\n\n` +
+                          `从 ${fromEngine.toUpperCase()} 降级到 ${toEngine.toUpperCase()}\n` +
+                          `原因: ${reason}\n` +
+                          `建议: ${suggestion}\n\n` +
+                          `时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`;
+            
+            console.log('[Voice] 📤 发送降级通知到 OpenClaw');
+            
+            // 发送到 OpenClaw Gateway (desktop-bridge.js 会转发到飞书)
+            const payload = JSON.stringify({
+                action: 'agent-response',
+                text: message
+            });
+            
+            const options = {
+                hostname: 'localhost',
+                port: 18788,
+                path: '/notify',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(payload)
+                }
+            };
+            
+            const req = http.request(options, (res) => {
+                console.log(`[Voice] ✅ 降级通知已发送 (状态: ${res.statusCode})`);
+            });
+            
+            req.on('error', (err) => {
+                console.error('[Voice] ❌ 降级通知发送失败:', err.message);
+            });
+            
+            req.write(payload);
+            req.end();
+            
+        } catch (err) {
+            console.error('[Voice] ❌ notifyDegradation 失败:', err.message);
+        }
     }
 
     /**

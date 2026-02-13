@@ -8,6 +8,8 @@
     "dev": "electron . --dev",
     "build": "electron-builder",
     "build:win": "electron-builder --win --x64",
+    "build:mac": "electron-builder --mac --x64 --arm64",
+    "build:all": "electron-builder --win --mac --x64 --arm64",
     "shortcut": "node create-shortcut.js",
     "kill": "taskkill /IM electron.exe /F 2>nul || echo No running instance"
   },
@@ -42,6 +44,34 @@
       "target": ["dir", "nsis"],
       "icon": "icon.ico",
       "artifactName": "${productName}-${version}-Setup.${ext}"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "icon.icns",
+      "category": "public.app-category.utilities",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
     },
     "nsis": {
       "oneClick": false,
