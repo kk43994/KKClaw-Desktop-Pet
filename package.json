@@ -1,6 +1,6 @@
 {
   "name": "kkclaw",
-  "version": "2.0.4",
+  "version": "2.1.0",
   "description": "🦞 kkclaw - AI-powered desktop lobster companion with voice, monitoring & smart interactions",
   "main": "main.js",
   "scripts": {
